@@ -19,6 +19,14 @@ import { CustomizedConnectButton } from "../components/blocks/CustomConnectButto
 import { isAddress } from "thirdweb";
 import { useActiveAccount } from "thirdweb/react";
 import { TrendingUpDownIcon } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { defaultSelectedChain, supportedChains } from "../lib/supportedChains";
 
 export default function LandingPage() {
   return (
@@ -65,6 +73,7 @@ export default function LandingPage() {
 }
 
 const formSchema = z.object({
+  chainId: z.coerce.number().int().min(1, "Chain is required"),
   tokenAddress: z.z
     .string()
     .min(1, "Token address is required")
@@ -83,6 +92,7 @@ function TokenForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     values: {
+      chainId: defaultSelectedChain.id,
       tokenAddress: "",
     },
   });
@@ -100,6 +110,34 @@ function TokenForm() {
       >
         <FormField
           control={form.control}
+          name="chainId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Chain</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value.toString()}
+              >
+                <FormControl>
+                  <SelectTrigger className="w-full bg-card border-input text-foreground focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all">
+                    <SelectValue placeholder="Select a chain" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {supportedChains.map((chain) => (
+                    <SelectItem key={chain.id} value={chain.id.toString()}>
+                      {chain.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="tokenAddress"
           render={({ field }) => (
             <FormItem>
@@ -108,7 +146,7 @@ function TokenForm() {
                 <Input
                   placeholder="0x123..."
                   {...field}
-                  className="w-full bg-background border-input text-foreground placeholder-muted-foreground focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all"
+                  className="w-full bg-card border-input text-foreground placeholder-muted-foreground focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all"
                 />
               </FormControl>
               <FormMessage />
