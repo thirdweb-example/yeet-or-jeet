@@ -8,6 +8,7 @@ import {
   lightTheme,
 } from "thirdweb/react";
 import { thirdwebClient } from "../../lib/thirdweb-client";
+import { supportedChains } from "../../lib/supportedChains";
 
 const overrides: ThemeOverrides = {
   colors: {
@@ -55,6 +56,7 @@ export function CustomizedConnectButton() {
       connectModal={{
         size: "wide",
       }}
+      chains={supportedChains}
       connectButton={{
         label: "Connect Wallet",
       }}
