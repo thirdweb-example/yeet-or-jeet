@@ -4,21 +4,29 @@ const API_VERSION = "20230302";
 
 // TODO - remove explicit any, add proper types
 
-export const defaultChainId = 8453;
-export const defaultNetwork = "base";
-export const defaultChainNameUniswap = "base";
-export const defaultToken = {
-  137: "0xeb51d9a39ad5eef215dc0bf39a8821ff804a0f01", // LGNS
-  8453: "0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf", // VVV
+const geckoNetworkMap: { [key: number]: string } = {
+  137: "polygon_pos",
+  8453: "base",
 };
 
-interface TokenInfo {
+interface TokenInfoPool {
+  address: string;
+  name: string;
+  volume_24h: number;
+  liquidity: number;
+  relationships: {
+    baseToken: string;
+    quoteToken: string;
+  };
+}
+
+export interface TokenInfo {
   price?: string;
   network?: string;
   address?: string;
   name?: string;
   symbol?: string;
-  pools?: any[];
+  pools?: TokenInfoPool[];
   trades?: any[];
   info?: any;
 }
@@ -43,10 +51,11 @@ async function fetchGeckoTerminal(endpoint: string) {
 }
 
 export async function getTokenInfo(
-  network: string,
+  chainId: number,
   address: string
 ): Promise<TokenInfo> {
   try {
+    const network = geckoNetworkMap[chainId];
     const [priceData, tokenData, poolsData] = await Promise.all([
       // Get token price
       fetchGeckoTerminal(`/simple/networks/${network}/token_price/${address}`),
@@ -77,6 +86,14 @@ export async function getTokenInfo(
         name: pool.attributes.name,
         volume_24h: pool.attributes.volume_usd_24h,
         liquidity: pool.attributes.reserve_in_usd,
+        relationships: {
+          baseToken: pool.relationships.base_token.data.id
+            .split("_")[1]
+            .toLowerCase(),
+          quoteToken: pool.relationships.quote_token.data.id
+            .split("_")[1]
+            .toLowerCase(),
+        },
       }));
     }
 
@@ -87,8 +104,67 @@ export async function getTokenInfo(
   }
 }
 
-export async function getTokenInfoForPool(poolAddress: string) {
-  return fetchGeckoTerminal(
-    `/networks/${defaultNetwork}/pools/${poolAddress}/info`
-  );
+interface PoolToken {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  imageUrl: string;
 }
+
+export interface PoolInfo {
+  chainId: number;
+  address: string;
+  token1: PoolToken;
+  token2: PoolToken;
+}
+
+export async function getTokenInfoForPool(
+  chainId: number,
+  poolAddress: string
+): Promise<PoolInfo> {
+  const network = geckoNetworkMap[chainId];
+  const poolInfo = await fetchGeckoTerminal(
+    `/networks/${network}/pools/${poolAddress}/info`
+  );
+
+  return {
+    chainId,
+    address: poolAddress,
+    token1: {
+      address: poolInfo[0]?.attributes?.address,
+      name: poolInfo[0]?.attributes?.name,
+      symbol: poolInfo[0]?.attributes?.symbol,
+      decimals: poolInfo[0]?.attributes?.decimals,
+      imageUrl: poolInfo[0]?.attributes?.decimals,
+    },
+    token2: {
+      address: poolInfo[1]?.attributes?.address,
+      name: poolInfo[1]?.attributes?.name,
+      symbol: poolInfo[1]?.attributes?.symbol,
+      decimals: poolInfo[1]?.attributes?.decimals,
+      imageUrl: poolInfo[1]?.attributes?.image_url,
+    },
+  };
+}
+
+export const fetchPoolInfo = async (
+  chainId: number,
+  fromTokenAddress: string,
+  toTokenAddress: string,
+  tokenInfo: TokenInfo
+): Promise<{ tokenInfo: TokenInfo; poolInfo: PoolInfo }> => {
+  const pool = tokenInfo.pools?.find(
+    (pool) =>
+      (pool.relationships.baseToken == fromTokenAddress.toLowerCase() &&
+        pool.relationships.quoteToken == toTokenAddress.toLowerCase()) ||
+      (pool.relationships.baseToken == toTokenAddress.toLowerCase() &&
+        pool.relationships.quoteToken == fromTokenAddress.toLowerCase())
+  );
+  const poolAddress = pool?.address;
+
+  if (!poolAddress) throw new Error("Pool not found");
+  const poolInfo = await getTokenInfoForPool(chainId, poolAddress);
+
+  return { tokenInfo, poolInfo };
+};

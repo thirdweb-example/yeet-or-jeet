@@ -19,6 +19,8 @@ import { CustomizedConnectButton } from "../components/blocks/CustomConnectButto
 import { isAddress } from "thirdweb";
 import { useActiveAccount } from "thirdweb/react";
 import { TrendingUpDownIcon } from "lucide-react";
+import { Swap } from "@/components/swap/swap";
+import { UniswapWidget } from "@/components/blocks/UniswapWidget";
 
 export default function LandingPage() {
   return (
@@ -129,6 +131,8 @@ function TokenForm() {
           </Button>
         )}
       </form>
+      <Swap/>
+      <UniswapWidget/>
     </Form>
   );
 }
