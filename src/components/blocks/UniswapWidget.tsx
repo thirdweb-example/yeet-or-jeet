@@ -8,9 +8,10 @@ import {
   getTokenInfoForPool,
 } from "@/lib/geckoterminal";
 import { useState } from "react";
-import { Input } from "./ui/input";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
 
-// This entire component needs to be refactored
+// TODO - add proper typescript types
 
 const Uniswap = ({ poolInfo }: { poolInfo: any }) => {
   const fromToken = poolInfo?.data?.[0]?.attributes?.address;
@@ -34,7 +35,7 @@ const Uniswap = ({ poolInfo }: { poolInfo: any }) => {
   );
 };
 
-const Chat = () => {
+export const UniswapWidget = () => {
   const [tokenInfo, setTokenInfo] = useState<object>();
   const [poolInfo, setPoolInfo] = useState();
   const [tokenAddress, setTokenAddress] = useState<string>();
@@ -66,10 +67,8 @@ const Chat = () => {
         defaultValue={defaultToken[defaultChainId]}
         onChange={(e) => setTokenAddress(e.target.value)}
       />
-      <button onClick={getTokenDetails}>Predict Now</button>
+      <Button onClick={getTokenDetails}>Predict Now</Button>
       <Uniswap poolInfo={poolInfo} />
     </>
   );
 };
-
-export default Chat;
