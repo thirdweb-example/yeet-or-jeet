@@ -131,8 +131,8 @@ function TokenForm() {
           </Button>
         )}
       </form>
-      <Swap/>
-      <UniswapWidget/>
+      {/* <Swap/> */}
+      {/* <UniswapWidget/> */}
     </Form>
   );
 }
