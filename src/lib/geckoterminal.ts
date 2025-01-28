@@ -1,5 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const BASE_URL = "https://api.geckoterminal.com/api/v2";
 const API_VERSION = "20230302";
+
+// TODO - remove explicit any, add proper types
 
 export const defaultChainId = 8453;
 export const defaultNetwork = "base";

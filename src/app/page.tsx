@@ -1,29 +1,134 @@
-"use client"
+"use client";
 
-import Chat from "@/components/Chat";
-import { client } from "@/lib/twclient";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { ThemeToggleButton } from "../components/blocks/toggle-theme";
 import Link from "next/link";
-import { ConnectButton, ThirdwebProvider } from "thirdweb/react"
-import { inAppWallet } from "thirdweb/wallets";
+import { CustomizedConnectButton } from "../components/blocks/CustomConnectButton";
+import { isAddress } from "thirdweb";
+import { useActiveAccount } from "thirdweb/react";
+import { TrendingUpDownIcon } from "lucide-react";
 
-const walletConfig = [inAppWallet({
-  auth: { options: ["email", "passkey", "google"] },
-})]
-
-export default function Home() {
+export default function LandingPage() {
   return (
-    <ThirdwebProvider>
-      <main>
-        <div className="border-b py-4">
-          <nav className="container">
-            <Link href="/" className="font-semibold tracking-tight">
-              YeetOrJeet
-            </Link>
-            <ConnectButton theme="light" client={client} wallets={walletConfig} />;
-          </nav>
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <header className="border-b border-border">
+        <div className="container max-w-6xl mx-auto flex justify-between items-center py-3 px-4">
+          <div className="text-3xl font-extrabold tracking-tight flex items-center gap-1.5">
+            YoJ
+            <TrendingUpDownIcon className="size-6 text-foreground" />
+          </div>
+          <div className="flex items-center gap-3">
+            <CustomizedConnectButton />
+            <ThemeToggleButton />
+          </div>
         </div>
-        <Chat />
+      </header>
+
+      <main className="flex-grow flex flex-col items-center justify-center p-6">
+        <h1 className="text-6xl lg:text-8xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-t dark:bg-gradient-to-b from-foreground to-foreground/70 tracking-tight inline-flex gap-2 lg:gap-3 items-center">
+          <span>Yeet</span>
+          <span className="italic font-bold ml-1">or</span>
+          <span>Jeet</span>
+        </h1>
+        <p className="text-xl lg: mb-16 text-muted-foreground font-medium">
+          Instant Trading Decisions
+        </p>
+
+        <TokenForm />
       </main>
-    </ThirdwebProvider>
+
+      <footer className="border-t border-border py-4">
+        <div className="container max-w-6xl mx-auto text-center text-muted-foreground px-5">
+          <Link
+            className="text-sm hover:text-foreground"
+            href="https://thirdweb.com/"
+            target="_blank"
+          >
+            Powered by thirdweb
+          </Link>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+const formSchema = z.object({
+  tokenAddress: z.z
+    .string()
+    .min(1, "Token address is required")
+    .refine((v) => {
+      // don't directly return isAddress(v) because it wil typecase tokenAddress to 0xString
+      if (isAddress(v)) {
+        return true;
+      }
+
+      return false;
+    }, "Invalid token address"),
+});
+
+function TokenForm() {
+  const account = useActiveAccount();
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    values: {
+      tokenAddress: "",
+    },
+  });
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log(values);
+    // Add your analysis logic here
+  }
+
+  return (
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="w-full max-w-sm flex flex-col gap-5"
+      >
+        <FormField
+          control={form.control}
+          name="tokenAddress"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Token Address</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="0x123..."
+                  {...field}
+                  className="w-full bg-background border-input text-foreground placeholder-muted-foreground focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {!account ? (
+          <CustomizedConnectButton />
+        ) : (
+          <Button
+            type="submit"
+            variant="default"
+            className="w-full font-semibold"
+            disabled={!account}
+          >
+            Get Answer
+          </Button>
+        )}
+      </form>
+    </Form>
   );
 }

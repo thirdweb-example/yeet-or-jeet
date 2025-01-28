@@ -1,4 +1,4 @@
-export const askNebula = async (message) => {
+export const askNebula = async (message: string) => {
   const response = await fetch("https://nebula-api.thirdweb.com", {
     method: "POST",
     headers: {
@@ -21,4 +21,3 @@ export const askNebula = async (message) => {
   const data = await response.json();
   return data;
 };
-
