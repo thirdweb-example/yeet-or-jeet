@@ -119,7 +119,7 @@ function TokenForm() {
                 value={field.value.toString()}
               >
                 <FormControl>
-                  <SelectTrigger className="w-full bg-background border-input text-foreground focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all">
+                  <SelectTrigger className="w-full bg-card border-input text-foreground focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all">
                     <SelectValue placeholder="Select a chain" />
                   </SelectTrigger>
                 </FormControl>
@@ -146,7 +146,7 @@ function TokenForm() {
                 <Input
                   placeholder="0x123..."
                   {...field}
-                  className="w-full bg-background border-input text-foreground placeholder-muted-foreground focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all"
+                  className="w-full bg-card border-input text-foreground placeholder-muted-foreground focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all"
                 />
               </FormControl>
               <FormMessage />
