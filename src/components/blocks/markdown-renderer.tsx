@@ -48,7 +48,7 @@ export const MarkdownRenderer: React.FC<{
             <h2
               className={cn(
                 commonHeadingClassName,
-                "mb-4 border-border border-b text-3xl"
+                "mb-4 border-border border-b text-3xl",
               )}
               {...cleanedProps(props)}
             />
@@ -59,7 +59,7 @@ export const MarkdownRenderer: React.FC<{
               {...cleanedProps(props)}
               className={cn(
                 commonHeadingClassName,
-                "mt-8 mb-4 border-border border-b text-2xl"
+                "mt-8 mb-4 border-border border-b text-2xl",
               )}
             />
           ),
@@ -127,7 +127,7 @@ export const MarkdownRenderer: React.FC<{
             <p
               className={cn(
                 "mb-4 text-muted-foreground leading-loose",
-                markdownProps.p?.className
+                markdownProps.p?.className,
               )}
               {...cleanedProps(props)}
             />
@@ -174,7 +174,7 @@ export const MarkdownRenderer: React.FC<{
             <li
               className={cn(
                 "mb-2 text-muted-foreground leading-loose [&>p]:m-0",
-                markdownProps.li?.className
+                markdownProps.li?.className,
               )}
               {...cleanedProps(props)}
             >
@@ -207,7 +207,7 @@ export const MarkdownRenderer: React.FC<{
 };
 
 function cleanedProps<T extends object & { node?: unknown }>(
-  props: T
+  props: T,
 ): Omit<T, "node"> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { node, ...rest } = props;

@@ -17,14 +17,14 @@ type imgElementProps = React.DetailedHTMLProps<
 
 export function Img(props: imgElementProps) {
   const [_status, setStatus] = useState<"pending" | "fallback" | "loaded">(
-    "pending"
+    "pending",
   );
   const status =
     props.src === undefined
       ? "pending"
       : props.src === ""
-      ? "fallback"
-      : _status;
+        ? "fallback"
+        : _status;
   const { className, fallback, skeleton, ...restProps } = props;
   const defaultSkeleton = <div className="animate-pulse bg-accent" />;
   const defaultFallback = <div className="bg-accent" />;
@@ -65,7 +65,7 @@ export function Img(props: imgElementProps) {
         alt={restProps.alt || ""}
         className={cn(
           "fade-in-0 object-cover transition-opacity duration-300",
-          className
+          className,
         )}
         decoding="async"
       />
@@ -75,7 +75,7 @@ export function Img(props: imgElementProps) {
           style={restProps.style}
           className={cn(
             "fade-in-0 absolute inset-0 overflow-hidden transition-opacity duration-300 [&>*]:h-full [&>*]:w-full",
-            className
+            className,
           )}
         >
           {status === "pending" && (skeleton || defaultSkeleton)}

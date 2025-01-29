@@ -42,7 +42,7 @@ export function ExecuteTransaction(props: {
   const switchChain = useSwitchActiveWalletChain();
   const [isSwitching, setIsSwitching] = useState(false);
   const themeObj = getCustomizedThirdwebTheme(
-    theme === "light" ? "light" : "dark"
+    theme === "light" ? "light" : "dark",
   );
 
   if (!activeChain) {

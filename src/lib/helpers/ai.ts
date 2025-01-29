@@ -1,17 +1,17 @@
-import Anthropic from '@anthropic-ai/sdk';
-import type { StartingData } from './info';
+import Anthropic from "@anthropic-ai/sdk";
+import type { StartingData } from "./info";
 
 const perplexityApiKey = process.env.PERPLEXITY_API_KEY;
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 const thirdwebSecretKey = process.env.THIRDWEB_SECRET_KEY;
 if (!perplexityApiKey) {
-  throw new Error('Missing PERPLEXITY_API_KEY');
+  throw new Error("Missing PERPLEXITY_API_KEY");
 }
 if (!anthropicApiKey) {
-  throw new Error('Missing ANTHROPIC_API_KEY');
+  throw new Error("Missing ANTHROPIC_API_KEY");
 }
 if (!thirdwebSecretKey) {
-  throw new Error('Missing THIRDWEB_SECRET_KEY');
+  throw new Error("Missing THIRDWEB_SECRET_KEY");
 }
 const anthropic = new Anthropic({
   apiKey: anthropicApiKey,
@@ -19,36 +19,39 @@ const anthropic = new Anthropic({
 
 export async function askClaude(
   prompt: string,
-  systemPrompt?: string
+  systemPrompt?: string,
 ): Promise<string> {
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-latest',
+      model: "claude-3-5-sonnet-latest",
       max_tokens: 4096,
-      system: systemPrompt || '',
+      system: systemPrompt || "",
       messages: [
         {
-          role: 'user',
+          role: "user",
           content: prompt,
         },
       ],
     });
 
-    const content = message.content[0]
-    if (content.type === 'text') {
+    const content = message.content[0];
+    if (content.type === "text") {
       return content.text;
     }
-    return '';
+    return "";
   } catch (error) {
-    console.error('Error calling Claude:', error);
+    console.error("Error calling Claude:", error);
     throw error;
   }
 }
 
-export async function formatQuestionsWithClaude(userInput: string): Promise<{
-  nebulaQuestion: string;
-  perplexityQuestion: string;
-} | undefined> {
+export async function formatQuestionsWithClaude(userInput: string): Promise<
+  | {
+      nebulaQuestion: string;
+      perplexityQuestion: string;
+    }
+  | undefined
+> {
   const systemPrompt = `You are a question formatter for a multi-AI system. Your task is to take a user's input and create two specialized questions:
 1. One for Nebula AI (specialized in blockchain and web3)
 2. One for Perplexity AI (specialized in general knowledge and current information)
@@ -79,7 +82,7 @@ Notes for Perplexity:
   try {
     const response = await askClaude(
       `Format this user question into specialized questions for Nebula and Perplexity: "${userInput}"`,
-      systemPrompt
+      systemPrompt,
     );
 
     // Try to extract JSON from the response if it's wrapped in text
@@ -88,80 +91,97 @@ Notes for Perplexity:
 
     try {
       // Handle potential newlines in the JSON string values
-      const cleanJsonStr = jsonStr.replace(/\\n/g, ' ').replace(/\n/g, ' ');
+      const cleanJsonStr = jsonStr.replace(/\\n/g, " ").replace(/\n/g, " ");
       const parsed = JSON.parse(cleanJsonStr);
-      
+
       // Validate the response structure
       if (!parsed.nebulaQuestion || !parsed.perplexityQuestion) {
-        throw new Error('Invalid response structure from Claude');
+        throw new Error("Invalid response structure from Claude");
       }
-      
+
       // Clean up the questions - remove extra spaces and normalize formatting
       return {
-        nebulaQuestion: parsed.nebulaQuestion.replace(/\s+/g, ' ').trim(),
-        perplexityQuestion: parsed.perplexityQuestion.replace(/\s+/g, ' ').trim()
+        nebulaQuestion: parsed.nebulaQuestion.replace(/\s+/g, " ").trim(),
+        perplexityQuestion: parsed.perplexityQuestion
+          .replace(/\s+/g, " ")
+          .trim(),
       };
     } catch (parseError) {
-      console.error('Failed to parse Claude response:', response, 'Error:', parseError);
-      return
+      console.error(
+        "Failed to parse Claude response:",
+        response,
+        "Error:",
+        parseError,
+      );
+      return;
     }
   } catch (error) {
-    console.error('Error in formatQuestionsWithClaude:', error);
-    return
+    console.error("Error in formatQuestionsWithClaude:", error);
+    return;
   }
 }
 
-export async function askPerplexity(question: string): Promise<string | undefined> {
+export async function askPerplexity(
+  question: string,
+): Promise<string | undefined> {
   try {
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${perplexityApiKey}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${perplexityApiKey}`,
       },
       body: JSON.stringify({
-        model: 'sonar-pro', // Using sonar-pro for larger context window (200k)
+        model: "sonar-pro", // Using sonar-pro for larger context window (200k)
         messages: [
           {
-            role: 'system',
-            content: 'Be precise and concise. Format your response in a clear, structured way.'
+            role: "system",
+            content:
+              "Be precise and concise. Format your response in a clear, structured way.",
           },
           {
-            role: 'user',
-            content: question
-          }
+            role: "user",
+            content: question,
+          },
         ],
         max_tokens: 4096,
         temperature: 0.2,
         top_p: 0.9,
         stream: false,
         presence_penalty: 0,
-        frequency_penalty: 1
-      })
+        frequency_penalty: 1,
+      }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      console.error('Perplexity API error:', errorData);
-      return
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: response.statusText }));
+      console.error("Perplexity API error:", errorData);
+      return;
     }
 
     const data = await response.json();
     return data.choices[0].message.content;
   } catch (error) {
-    console.error('Error calling Perplexity:', error);
-    return
+    console.error("Error calling Perplexity:", error);
+    return;
   }
 }
 
-export async function askNebula(message: string, chainId: number, tokenAddress: string, userWalletAddress: string): Promise<string | undefined> {
+export async function askNebula(
+  message: string,
+  chainId: number,
+  tokenAddress: string,
+  userWalletAddress: string,
+): Promise<string | undefined> {
   let sessionId: string | undefined;
   try {
-    const response = await fetch('https://nebula-api.thirdweb.com/session', {
-      method: 'POST',
+    const response = await fetch("https://nebula-api.thirdweb.com/session", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'x-secret-key': thirdwebSecretKey || '',
+        "Content-Type": "application/json",
+        "x-secret-key": thirdwebSecretKey || "",
       },
       body: JSON.stringify({
         execute_config: {
@@ -172,29 +192,28 @@ export async function askNebula(message: string, chainId: number, tokenAddress: 
         context_filter: {
           chain_ids: [chainId.toString()],
           contract_addresses: [tokenAddress],
-          wallet_addresses: [userWalletAddress]
-        }
+          wallet_addresses: [userWalletAddress],
+        },
       }),
     });
 
-    
     const data = await response.json();
     if (!response.ok) {
-      console.error('Nebula API error:', data);
-      return
+      console.error("Nebula API error:", data);
+      return;
     }
     sessionId = data.result.id;
   } catch (error) {
-    console.error('Error creating Nebula session:', error);
-    return
+    console.error("Error creating Nebula session:", error);
+    return;
   }
 
   try {
-    const response = await fetch('https://nebula-api.thirdweb.com/chat', {
-      method: 'POST',
+    const response = await fetch("https://nebula-api.thirdweb.com/chat", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'x-secret-key': thirdwebSecretKey || '',
+        "Content-Type": "application/json",
+        "x-secret-key": thirdwebSecretKey || "",
       },
       body: JSON.stringify({
         message,
@@ -207,30 +226,29 @@ export async function askNebula(message: string, chainId: number, tokenAddress: 
         context_filter: {
           chain_ids: [chainId.toString()],
           contract_addresses: [tokenAddress],
-          wallet_addresses: [userWalletAddress]
-        }
+          wallet_addresses: [userWalletAddress],
+        },
       }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || 'Nebula API error');
+      throw new Error(data.error || "Nebula API error");
     }
 
     return data.response || data.result?.response || data;
   } catch (error) {
-    console.error('Error in askNebula:', error);
-    return
+    console.error("Error in askNebula:", error);
+    return;
   }
 }
 
 export async function synthesizeResponses(
   startingData: StartingData,
   nebulaResponse: string,
-  perplexityResponse: string
+  perplexityResponse: string,
 ): Promise<string | undefined> {
-
   // First synthesis with Claude
   const claudeSystemPrompt = `You are a crypto trading analyst focused on making immediate Yeet (buy), Jeet (sell), or Hodl (hold) decisions. Synthesize the data to support a clear trading decision. Your response will be used to generate a final analysis with Perplexity AI.
 
@@ -241,7 +259,7 @@ Calculated growth score based on on chain transfers (0-100):
 ${startingData.growthScore}
 
 Token contract ABI:
-${startingData.contractABI ? JSON.stringify(startingData.contractABI) : 'unverified'}
+${startingData.contractABI ? JSON.stringify(startingData.contractABI) : "unverified"}
 
 Onchain/Web3 Perspective (Nebula):
 ${nebulaResponse}
@@ -254,9 +272,12 @@ Market Data (GeckoTerminal):
 - Blockchain ID: ${startingData.chainId}
 - Name: ${startingData.geckoTerminalData?.data.attributes.name}
 - Symbol: ${startingData.geckoTerminalData?.data.attributes.symbol}
-- Top Pools: ${startingData.geckoTerminalData?.included?.map(p => 
-    `\n  * ${p.attributes.name} (24h Volume: $${p.attributes.volume_usd.h24}, Liquidity: $${p.attributes.reserve_in_usd})`
-  ).join('')}
+- Top Pools: ${startingData.geckoTerminalData?.included
+    ?.map(
+      (p) =>
+        `\n  * ${p.attributes.name} (24h Volume: $${p.attributes.volume_usd.h24}, Liquidity: $${p.attributes.reserve_in_usd})`,
+    )
+    .join("")}
 
 Focus on:
 1. Price momentum and volatility
@@ -266,7 +287,10 @@ Focus on:
 5. User's current holdings and portfolio impact
 6. Suggested position size (% of portfolio)`;
 
-  const claudeSynthesis = await askClaude("Please synthesize this information to support a Yeet/Jeet/Hodl decision:", claudeSystemPrompt);
+  const claudeSynthesis = await askClaude(
+    "Please synthesize this information to support a Yeet/Jeet/Hodl decision:",
+    claudeSystemPrompt,
+  );
 
   // Final pass with Perplexity
   const perplexityFinalPrompt = `You are YeetorJeet's lead analyst. Based on the following synthesized information, provide a decisive Yeet (buy), Jeet (sell), or Hodl (hold) recommendation with specific details on position size and timing. Format your response in our standard JSON structure.

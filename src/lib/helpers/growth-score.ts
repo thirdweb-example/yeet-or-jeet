@@ -1,6 +1,10 @@
-export const calculateGrowthScore = (data: { date: string; count: number }[]) => {
+export const calculateGrowthScore = (
+  data: { date: string; count: number }[],
+) => {
   // Extract counts and dates sorted by time (ascending order)
-  const timeSeries = data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // Sort by date
+  const timeSeries = data.sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  ); // Sort by date
   const counts = timeSeries.map((item) => item.count);
 
   // Calculate hourly growth rates
@@ -26,17 +30,15 @@ export const calculateGrowthScore = (data: { date: string; count: number }[]) =>
   const scaledGrowthRates = smoothedGrowthRates.map((rate) =>
     maxGrowth > minGrowth
       ? ((rate - minGrowth) / (maxGrowth - minGrowth)) * 100
-      : 0
+      : 0,
   );
   // Weight recent data points more heavily (exponential weight)
   const weights = scaledGrowthRates.map((_, i) =>
-    Math.exp(i - scaledGrowthRates.length)
+    Math.exp(i - scaledGrowthRates.length),
   );
   const weightedScore =
-    scaledGrowthRates.reduce(
-      (sum, rate, i) => sum + rate * weights[i],
-      0
-    ) / weights.reduce((sum, weight) => sum + weight, 0);
+    scaledGrowthRates.reduce((sum, rate, i) => sum + rate * weights[i], 0) /
+    weights.reduce((sum, weight) => sum + weight, 0);
 
   return Math.round(weightedScore * 100) / 100; // Round to 2 decimal places
 };

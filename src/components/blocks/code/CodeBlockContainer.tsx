@@ -22,14 +22,14 @@ export function CodeBlockContainer(props: {
     <div
       className={cn(
         "group relative max-w-full overflow-hidden rounded-lg border border-border bg-card",
-        props.className
+        props.className,
       )}
     >
       <ScrollShadow
         scrollableClassName={cn("p-4", props.scrollableClassName)}
         className={cn(
           "text-xs md:text-sm [&_*]:leading-relaxed",
-          props.scrollableContainerClassName
+          props.scrollableContainerClassName,
         )}
         shadowColor={props.shadowColor || "hsl(var(--muted))"}
       >
@@ -45,7 +45,7 @@ export function CodeBlockContainer(props: {
         }}
         className={cn(
           "absolute top-3.5 right-3.5 h-auto bg-background p-2",
-          props.copyButtonClassName
+          props.copyButtonClassName,
         )}
       >
         {hasCopied ? (

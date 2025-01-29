@@ -44,7 +44,7 @@ async function fetchGeckoTerminal(endpoint: string) {
 
 export async function getTokenInfo(
   network: string,
-  address: string
+  address: string,
 ): Promise<TokenInfo> {
   try {
     const [priceData, tokenData, poolsData] = await Promise.all([
@@ -89,6 +89,6 @@ export async function getTokenInfo(
 
 export async function getTokenInfoForPool(poolAddress: string) {
   return fetchGeckoTerminal(
-    `/networks/${defaultNetwork}/pools/${poolAddress}/info`
+    `/networks/${defaultNetwork}/pools/${poolAddress}/info`,
   );
 }

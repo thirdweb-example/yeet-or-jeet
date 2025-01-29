@@ -22,7 +22,7 @@ export function TokenInfoCard(props: TokenInfo) {
     <div
       className={cn(
         "bg-card border rounded-lg p-4 flex gap-4 items-center relative",
-        explorerLink && "hover:border-active-border"
+        explorerLink && "hover:border-active-border",
       )}
     >
       {/* Left */}
@@ -39,7 +39,7 @@ export function TokenInfoCard(props: TokenInfo) {
         {/* Row 1 */}
         <div
           className={cn(
-            "gap-2 flex items-center justify-between font-semibold"
+            "gap-2 flex items-center justify-between font-semibold",
           )}
         >
           <h3 className="truncate">
@@ -91,7 +91,7 @@ export function WalletInfoCard(props: WalletInfo) {
     <div
       className={cn(
         "bg-card border rounded-lg p-4 flex gap-4 items-center relative",
-        explorerLink && "hover:border-active-border"
+        explorerLink && "hover:border-active-border",
       )}
     >
       {/* Left */}
@@ -108,7 +108,7 @@ export function WalletInfoCard(props: WalletInfo) {
         {/* Row 1 */}
         <div
           className={cn(
-            "gap-2 flex items-center justify-between font-semibold"
+            "gap-2 flex items-center justify-between font-semibold",
           )}
         >
           <h3 className="truncate">

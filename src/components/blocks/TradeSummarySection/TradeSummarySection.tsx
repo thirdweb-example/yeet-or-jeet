@@ -39,7 +39,7 @@ export function TradeSummarySection(props: {
       <div
         className={cn(
           "flex flex-col gap-2 grow",
-          props.actions && props.actions.length > 0 && "gap-3"
+          props.actions && props.actions.length > 0 && "gap-3",
         )}
       >
         <h3
@@ -50,7 +50,7 @@ export function TradeSummarySection(props: {
             props.variant === "buy" &&
               "bg-green-100 dark:bg-green-950 text-green-950 dark:text-green-200",
             props.variant === "hold" &&
-              "bg-yellow-100 dark:bg-yellow-950 text-yellow-950 dark:text-yellow-200"
+              "bg-yellow-100 dark:bg-yellow-950 text-yellow-950 dark:text-yellow-200",
           )}
         >
           {props.title}

@@ -11,7 +11,7 @@ const Table = React.forwardRef<
     ref={ref}
     className={cn(
       "w-full caption-bottom border-collapse align-top text-sm lining-nums tabular-nums",
-      className
+      className,
     )}
     {...props}
   />
@@ -27,7 +27,7 @@ const TableHeader = React.forwardRef<
     className={cn(
       "border-border border-b bg-background",
       "sticky top-0 z-20 border-none before:absolute before:inset-0 before:border-border before:border-b",
-      className
+      className,
     )}
     {...props}
   />
@@ -55,7 +55,7 @@ const TableFooter = React.forwardRef<
     ref={ref}
     className={cn(
       "border-border border-t bg-card font-medium [&>tr]:last:border-b-0",
-      className
+      className,
     )}
     {...props}
   />
@@ -77,7 +77,7 @@ const TableRow = React.forwardRef<
     className={cn(
       "border-border border-b last:border-0 data-[state=selected]:bg-muted",
       linkBox && "relative translate-x-0 translate-y-0",
-      className
+      className,
     )}
     {...props}
   />
@@ -92,7 +92,7 @@ const TableHead = React.forwardRef<
     ref={ref}
     className={cn(
       "px-6 py-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider [&:has([role=checkbox])]:pr-0",
-      className
+      className,
     )}
     {...props}
   />
@@ -107,7 +107,7 @@ const TableCell = React.forwardRef<
     ref={ref}
     className={cn(
       "px-6 py-4 text-start align-middle text-sm [&:has([role=checkbox])]:pr-0",
-      className
+      className,
     )}
     {...props}
   />
@@ -137,7 +137,7 @@ function TableContainer(props: {
       disableTopShadow
       className={cn(
         "relative whitespace-nowrap rounded-lg border border-border bg-card",
-        props.className
+        props.className,
       )}
       scrollableClassName={props.scrollableContainerClassName}
       shadowColor="hsl(var(--muted))"

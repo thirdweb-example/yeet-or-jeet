@@ -1,25 +1,27 @@
 // these can be fetched from their API, but we're just going to hardcode them for now
 const chainIdToSlug: Record<number, string> = {
-  8453: 'base',
-  1: 'eth'
-}
+  8453: "base",
+  1: "eth",
+};
 
 export type GeckoTxStats = {
   buys: number;
   sells: number;
   buyers: number;
   sellers: number;
-}
+};
 
 export type GeckoRelationship = {
-  data: {
-    id: string;
-    type: string;
-  } | {
-    id: string;
-    type: string;
-  }[];
-}
+  data:
+    | {
+        id: string;
+        type: string;
+      }
+    | {
+        id: string;
+        type: string;
+      }[];
+};
 
 export type GeckoPoolData = {
   id: string;
@@ -42,28 +44,28 @@ export type GeckoPoolData = {
       h1: string;
       h6: string;
       h24: string;
-    },
+    };
     transactions: {
-      m5: GeckoTxStats,
-      m15: GeckoTxStats,
-      m30: GeckoTxStats,
-      h1: GeckoTxStats,
-      h24: GeckoTxStats
-    },
+      m5: GeckoTxStats;
+      m15: GeckoTxStats;
+      m30: GeckoTxStats;
+      h1: GeckoTxStats;
+      h24: GeckoTxStats;
+    };
     volume_usd: {
       m5: string;
       h1: string;
       h6: string;
       h24: string;
-    },
+    };
     reserve_in_usd: string;
-  },
+  };
   relationships: {
-    base_token: GeckoRelationship
-    quote_token: GeckoRelationship
-    dex: GeckoRelationship
-  }
-}
+    base_token: GeckoRelationship;
+    quote_token: GeckoRelationship;
+    dex: GeckoRelationship;
+  };
+};
 
 export type GeckoTerminalData = {
   data: {
@@ -84,24 +86,26 @@ export type GeckoTerminalData = {
         h24: string;
       };
       market_cap_usd: string;
-    }
+    };
     relationships: {
-      top_pools: GeckoRelationship
-    }
-  }
-  included: GeckoPoolData[]
-}
+      top_pools: GeckoRelationship;
+    };
+  };
+  included: GeckoPoolData[];
+};
 
-export const getGeckoTerminalData = async (chainId: number, tokenAddress: string): Promise<GeckoTerminalData | undefined> => {
+export const getGeckoTerminalData = async (
+  chainId: number,
+  tokenAddress: string,
+): Promise<GeckoTerminalData | undefined> => {
   const chainSlug = chainIdToSlug[chainId];
-  if (!chainSlug) return
-  const url = `https://api.geckoterminal.com/api/v2/networks/${chainSlug}/tokens/${tokenAddress}?include=top_pools`
+  if (!chainSlug) return;
+  const url = `https://api.geckoterminal.com/api/v2/networks/${chainSlug}/tokens/${tokenAddress}?include=top_pools`;
   const response = await fetch(url, {
     headers: {
-      'accept': 'application/json;version=20230302',
+      accept: "application/json;version=20230302",
     },
   });
-  if (!response.ok) return
+  if (!response.ok) return;
   return await response.json();
-}
-
+};
