@@ -252,32 +252,46 @@ export async function synthesizeResponses(
   const claudeSystemPrompt = `You are YeetorJeet's lead analyst focused on making immediate Yeet (buy), Jeet (sell), or Hodl (hold) decisions. Analyze the data and provide a decisive recommendation formatted in our standard JSON structure. Your analysis should be specific to the token provided.
 
 Available Data:
-${startingData.hourlyTransferCounts ? `Onchain transfers of the token in the last 24 hours by hour:
+${
+  startingData.hourlyTransferCounts
+    ? `Onchain transfers of the token in the last 24 hours by hour:
 ${JSON.stringify(startingData.hourlyTransferCounts)}
 
 Calculated growth score based on on chain transfers (0-100):
-${startingData.growthScore}` : 'No on-chain transfer data available.'}
+${startingData.growthScore}`
+    : "No on-chain transfer data available."
+}
 
-${startingData.contractABI ? `Token contract ABI:
-${JSON.stringify(startingData.contractABI)}` : 'Contract is unverified'}
+${
+  startingData.contractABI
+    ? `Token contract ABI:
+${JSON.stringify(startingData.contractABI)}`
+    : "Contract is unverified"
+}
 
 Onchain/Web3 Perspective (Nebula):
-${nebulaResponse || 'No Nebula response available'}
+${nebulaResponse || "No Nebula response available"}
 
 Online Search Engine Perspective (Perplexity):
-${perplexityResponse || 'No Perplexity response available'}
+${perplexityResponse || "No Perplexity response available"}
 
-${startingData.geckoTerminalData ? `Market Data (GeckoTerminal):
-- Current Price: $${startingData.geckoTerminalData?.included?.[0]?.attributes?.base_token_price_usd || 'N/A'}
+${
+  startingData.geckoTerminalData
+    ? `Market Data (GeckoTerminal):
+- Current Price: $${startingData.geckoTerminalData?.included?.[0]?.attributes?.base_token_price_usd || "N/A"}
 - Blockchain ID: ${startingData.chainId}
-- Name: ${startingData.geckoTerminalData?.data?.attributes?.name || 'N/A'}
-- Symbol: ${startingData.geckoTerminalData?.data?.attributes?.symbol || 'N/A'}
-- Top Pools: ${startingData.geckoTerminalData?.included
-    ?.map(
-      (p) =>
-        `\n  * ${p.attributes.name} (24h Volume: $${p.attributes.volume_usd.h24}, Liquidity: $${p.attributes.reserve_in_usd})`,
-    )
-    .join("") || 'N/A'}` : 'No market data available from GeckoTerminal'}
+- Name: ${startingData.geckoTerminalData?.data?.attributes?.name || "N/A"}
+- Symbol: ${startingData.geckoTerminalData?.data?.attributes?.symbol || "N/A"}
+- Top Pools: ${
+        startingData.geckoTerminalData?.included
+          ?.map(
+            (p) =>
+              `\n  * ${p.attributes.name} (24h Volume: $${p.attributes.volume_usd.h24}, Liquidity: $${p.attributes.reserve_in_usd})`,
+          )
+          .join("") || "N/A"
+      }`
+    : "No market data available from GeckoTerminal"
+}
 
 Analysis Requirements:
 1. Price momentum and volatility
@@ -295,8 +309,8 @@ You must respond with a JSON object using this exact structure:
       "section": "inputs", // get this section from 
       "tokenInfo": {
         "address": "string",
-        "name": "${startingData.geckoTerminalData?.data?.attributes?.name || 'N/A'}",
-        "symbol": "${startingData.geckoTerminalData?.data?.attributes?.symbol || 'N/A'}",
+        "name": "${startingData.geckoTerminalData?.data?.attributes?.name || "N/A"}",
+        "symbol": "${startingData.geckoTerminalData?.data?.attributes?.symbol || "N/A"}",
         "price": "string",
         "marketCap": "string",
         "chainid": "${startingData.chainId}",

@@ -170,8 +170,12 @@ function ResponseScreen(props: {
 
   if (analysisQuery.data) {
     const data = analysisQuery.data;
-    const verdict = data.sections.find((s) => s.section === "verdict") as Section | undefined;
-    const details = data.sections.find((s) => s.section === "details") as Section | undefined;
+    const verdict = data.sections.find((s) => s.section === "verdict") as
+      | Section
+      | undefined;
+    const details = data.sections.find((s) => s.section === "details") as
+      | Section
+      | undefined;
     const actions = verdict?.actions || [];
 
     return (
@@ -179,13 +183,14 @@ function ResponseScreen(props: {
         {/* Inputs Section */}
         <InputsSection
           tokenInfo={{
-            name: verdict?.tokenInfo?.symbol || verdict?.tokenInfo?.name || "N/A", // TODO: Get from chain
+            name:
+              verdict?.tokenInfo?.symbol || verdict?.tokenInfo?.name || "N/A", // TODO: Get from chain
             address: props.tokenAddress,
             priceUSD: verdict?.tokenInfo?.price || "0.00",
             marketCapUSD: verdict?.tokenInfo?.marketCap || "0",
             volumeUSD: "0",
             tokenIcon: "", // TODO: Get token icon
-            chain: props.chain
+            chain: props.chain,
           }}
           walletInfo={{
             name: "Wallet",
@@ -194,7 +199,7 @@ function ResponseScreen(props: {
             winRate: "0%",
             realizedPnL: "0",
             ensImage: "",
-            chain: props.chain
+            chain: props.chain,
           }}
         />
 
@@ -215,7 +220,7 @@ function ResponseScreen(props: {
         {details && (
           <div className="space-y-6">
             <div className="space-y-4">
-              <MarkdownRenderer markdownText={details.content || ''} />
+              <MarkdownRenderer markdownText={details.content || ""} />
             </div>
           </div>
         )}
@@ -228,9 +233,7 @@ function ResponseScreen(props: {
               {actions.map((action, i) => (
                 <div key={i} className="p-4 rounded-lg border">
                   <div className="flex-1">
-                    <div className="font-medium">
-                      {action.description}
-                    </div>
+                    <div className="font-medium">{action.description}</div>
                     <div className="text-sm text-muted-foreground">
                       {action.subtext}
                     </div>
