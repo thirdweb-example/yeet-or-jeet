@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { defaultSelectedChain, supportedChains } from "@/lib/supportedChains";
+import { supportedChains } from "@/lib/supportedChains";
 import { Network } from "lucide-react";
 
 interface ChainSelectorProps {
@@ -16,18 +16,21 @@ interface ChainSelectorProps {
 }
 
 export function ChainSelector({ value, onChange }: ChainSelectorProps) {
-  const selectedChain =
-    supportedChains.find((chain) => chain.id === value) || defaultSelectedChain;
+  const selectedChain = supportedChains.find((chain) => chain.id === value);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          className="h-[50px] rounded-lg px-3 w-auto bg-card"
+          className="h-[50px] rounded-lg px-3 w-auto bg-card flex items-center gap-2"
         >
           <Network className="size-5" />
-          <span className="sr-only">Select chain</span>
+          {selectedChain ? (
+            <span className="text-sm font-medium">{selectedChain.name}</span>
+          ) : (
+            <span className="sr-only">Select chain</span>
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
