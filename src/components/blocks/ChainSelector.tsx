@@ -16,7 +16,8 @@ interface ChainSelectorProps {
 }
 
 export function ChainSelector({ value, onChange }: ChainSelectorProps) {
-  const selectedChain = supportedChains.find((chain) => chain.id === value) || defaultSelectedChain;
+  const selectedChain =
+    supportedChains.find((chain) => chain.id === value) || defaultSelectedChain;
 
   return (
     <DropdownMenu>
@@ -31,10 +32,7 @@ export function ChainSelector({ value, onChange }: ChainSelectorProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {supportedChains.map((chain) => (
-          <DropdownMenuItem
-            key={chain.id}
-            onClick={() => onChange?.(chain.id)}
-          >
+          <DropdownMenuItem key={chain.id} onClick={() => onChange?.(chain.id)}>
             {chain.name}
           </DropdownMenuItem>
         ))}

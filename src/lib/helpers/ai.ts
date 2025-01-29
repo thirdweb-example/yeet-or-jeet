@@ -344,7 +344,7 @@ You must respond with a JSON object using this exact structure:
     },
     {
       "section": "details",
-      "content": "string" // Detailed analysis in markdown format including market conditions, technical analysis, and risk factors. This should include a ton of stuff from above and previous data you've pulled. Focus on the token itself.
+      "content": "string" // Detailed analysis in markdown format including market conditions, technical analysis, and risk factors. This should include a ton of stuff from above and previous data you've pulled. Focus on the token itself. Be concise, dense, and note-taking in your structure, no need for complete sentences. You don't need a title for this section.
     }
   ]
 }
@@ -356,7 +356,7 @@ Make sure to:
 4. Be decisive in the verdict section
 5. Provide clear reasoning in the details section
 6. Focus on insights, things a trader wouldn't already know, specific to the token and current market conditions
-7. Make sure to use accurate values and proper JSON format`;
+7. Use accurate values and proper JSON format`;
 
   return await askClaude(
     "Based on the provided information, generate a complete trading analysis and recommendation in the specified JSON format. Ensure all required fields are included and properly formatted.",

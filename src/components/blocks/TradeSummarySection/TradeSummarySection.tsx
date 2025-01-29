@@ -30,15 +30,15 @@ export function TradeSummarySection(props: {
   }>;
 }) {
   return (
-      <div className="flex flex-col">
-        <h3 className="text-lg font-semibold tracking-tight mb-3">Answer</h3>
-        <div className="flex gap-4">
-          <Image
-            src={variantImageMap[props.variant]}
-            className="size-20 lg:size-24 aspect-square rounded-lg border"
-            alt=""
-          />
-          <div
+    <div className="flex flex-col">
+      <h3 className="text-lg font-semibold tracking-tight mb-3">Answer</h3>
+      <div className="flex gap-4">
+        <Image
+          src={variantImageMap[props.variant]}
+          className="size-20 lg:size-24 aspect-square rounded-lg border"
+          alt=""
+        />
+        <div
           className={cn(
             "flex flex-col gap-2 grow",
             props.actions && props.actions.length > 0 && "gap-3",
@@ -76,6 +76,6 @@ export function TradeSummarySection(props: {
           </div>
         </div>
       </div>
-      </div>
+    </div>
   );
 }

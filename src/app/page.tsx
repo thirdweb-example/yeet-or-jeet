@@ -32,7 +32,6 @@ import { InputsSection } from "../components/blocks/InputsSection";
 import { SourcesSection } from "../components/blocks/SourcesSection";
 import { TradeSummarySection } from "../components/blocks/TradeSummarySection/TradeSummarySection";
 import { MarkdownRenderer } from "../components/blocks/markdown-renderer";
-import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 type NebulaTxData = {
@@ -42,16 +41,21 @@ type NebulaTxData = {
   value: string;
 };
 
+type Action = {
+  label: string;
+  description: string;
+  subtext: string;
+  recommendedPercentage: number;
+  txData: NebulaTxData;
+};
+
 type Section = {
   section: "inputs" | "verdict" | "details";
   type?: "buy" | "sell" | "hold";
   title?: string;
   description?: string;
   summary?: string;
-  actions?: Array<{
-    label: string;
-    txData: NebulaTxData;
-  }>;
+  actions?: Action[];
   content?: string;
   tokenInfo?: {
     address: string;
@@ -106,7 +110,10 @@ export default function LandingPage() {
 
   if (screen.id === "response") {
     return (
-      <ResponseScreen {...screen.props} onBack={() => setScreen({ id: "initial" })} />
+      <ResponseScreen
+        {...screen.props}
+        onBack={() => setScreen({ id: "initial" })}
+      />
     );
   }
 
@@ -236,14 +243,14 @@ function ResponseScreen(props: {
         {/* Details Section */}
         {detailsSection && (
           <div className="space-y-6">
-            <div className="space-y-4">
+            <div className="space-y-4 columns-2">
               <MarkdownRenderer markdownText={detailsSection.content || ""} />
             </div>
           </div>
         )}
 
         {/* Actions Section */}
-        {verdictSection?.actions?.length > 0 && (
+        {verdictSection?.actions && verdictSection.actions.length > 0 && (
           <div className="space-y-4">
             <h3 className="text-xl font-semibold">Actions</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -252,11 +259,16 @@ function ResponseScreen(props: {
                   <div className="flex-1">
                     <div className="font-medium">{action.label}</div>
                     <div className="text-sm text-muted-foreground">
-                      {action.subtext}
+                      {action.description}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       {action.recommendedPercentage}% Recommended
                     </div>
+                    {action.subtext && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {action.subtext}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
