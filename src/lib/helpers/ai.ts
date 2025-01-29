@@ -354,7 +354,9 @@ Make sure to:
 2. Format the details section in proper markdown
 3. Include specific transaction data in the actions
 4. Be decisive in the verdict section
-5. Provide clear reasoning in the details section`;
+5. Provide clear reasoning in the details section
+6. Focus on insights, things a trader wouldn't already know, specific to the token and current market conditions
+7. Make sure to use accurate values and proper JSON format`;
 
   return await askClaude(
     "Based on the provided information, generate a complete trading analysis and recommendation in the specified JSON format. Ensure all required fields are included and properly formatted.",
