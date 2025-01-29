@@ -48,7 +48,7 @@ export function ExecuteTransaction(props: {
   if (!activeChain) {
     return (
       <Popover>
-        <PopoverTrigger>
+        <PopoverTrigger asChild>
           <Button className={props.className}>{props.label}</Button>
         </PopoverTrigger>
         <PopoverContent className="max-w-[350px]" sideOffset={10}>
@@ -64,7 +64,7 @@ export function ExecuteTransaction(props: {
   if (activeChain.id !== chain.id) {
     return (
       <Popover>
-        <PopoverTrigger>
+        <PopoverTrigger asChild>
           <Button className={props.className}>{props.label}</Button>
         </PopoverTrigger>
         <PopoverContent className="max-w-[350px]" sideOffset={10}>

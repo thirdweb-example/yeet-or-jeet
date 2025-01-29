@@ -15,7 +15,7 @@ export const askNebula = async (message: string) => {
     const errorData = await response
       .json()
       .catch(() => ({ error: response.statusText }));
-    throw new Error(`Perplexity API error: ${JSON.stringify(errorData)}`);
+    throw new Error(`Nebula API error: ${JSON.stringify(errorData)}`);
   }
 
   const data = await response.json();
