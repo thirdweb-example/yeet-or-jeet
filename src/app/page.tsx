@@ -28,7 +28,46 @@ import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "../components/blocks/Loading";
 import { useState } from "react";
 import { getTokenAnalysis } from "./server-actions/getTokenAnalysis";
-import { PlainTextCodeBlock } from "../components/blocks/code/plaintext-code";
+import { InputsSection } from "../components/blocks/InputsSection";
+import { SourcesSection } from "../components/blocks/SourcesSection";
+import { TradeSummarySection } from "../components/blocks/TradeSummarySection/TradeSummarySection";
+import { MarkdownRenderer } from "../components/blocks/markdown-renderer";
+
+type NebulaTxData = {
+  chainId: number;
+  data: `0x${string}`;
+  to: string;
+  value: string;
+};
+
+type Section = {
+  section: "inputs" | "verdict" | "details";
+  type?: "buy" | "sell" | "hold";
+  title?: string;
+  description?: string;
+  summary?: string;
+  actions?: Array<{
+    label: string;
+    txData: NebulaTxData;
+  }>;
+  content?: string;
+  tokenInfo?: {
+    address: string;
+    name: string;
+    symbol: string;
+    price: string;
+    marketCap: string;
+  };
+  walletInfo?: {
+    address: string;
+    balance: string;
+    holdings: string;
+  };
+};
+
+type TokenAnalysis = {
+  sections: Section[];
+};
 
 type Screen =
   | { id: "initial" }
@@ -120,7 +159,7 @@ function ResponseScreen(props: {
         throw new Error(res.error);
       }
 
-      return res.data;
+      return res.data as TokenAnalysis;
     },
     retry: false,
   });
@@ -130,10 +169,80 @@ function ResponseScreen(props: {
   }
 
   if (analysisQuery.data) {
-    const dataStr = JSON.stringify(analysisQuery.data, null, 2);
+    const data = analysisQuery.data;
+    const verdict = data.sections.find((s) => s.section === "verdict") as Section | undefined;
+    const details = data.sections.find((s) => s.section === "details") as Section | undefined;
+    const actions = verdict?.actions || [];
+
     return (
-      <div className="grow flex flex-col container max-w-6xl py-10">
-        <PlainTextCodeBlock code={dataStr} />
+      <div className="grow flex flex-col container max-w-6xl py-10 gap-8">
+        {/* Inputs Section */}
+        <InputsSection
+          tokenInfo={{
+            name: verdict?.tokenInfo?.symbol || verdict?.tokenInfo?.name || "N/A", // TODO: Get from chain
+            address: props.tokenAddress,
+            priceUSD: verdict?.tokenInfo?.price || "0.00",
+            marketCapUSD: verdict?.tokenInfo?.marketCap || "0",
+            volumeUSD: "0",
+            tokenIcon: "", // TODO: Get token icon
+            chain: props.chain
+          }}
+          walletInfo={{
+            name: "Wallet",
+            address: props.walletAddress,
+            balanceUSD: "0",
+            winRate: "0%",
+            realizedPnL: "0",
+            ensImage: "",
+            chain: props.chain
+          }}
+        />
+
+        {/* Sources Section */}
+        <SourcesSection />
+
+        {/* Results Section */}
+        {verdict && (
+          <TradeSummarySection
+            variant={verdict.type!}
+            title={verdict.title!}
+            description={verdict.description!}
+            actions={[]}
+          />
+        )}
+
+        {/* Details Section */}
+        {details && (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <MarkdownRenderer markdownText={details.content || ''} />
+            </div>
+          </div>
+        )}
+
+        {/* Actions Section */}
+        {actions.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold">Actions</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {actions.map((action, i) => (
+                <div key={i} className="p-4 rounded-lg border">
+                  <div className="flex-1">
+                    <div className="font-medium">
+                      {action.description}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {action.subtext}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {action.recommendedPercentage}% Recommended
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

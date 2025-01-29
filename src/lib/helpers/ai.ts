@@ -249,100 +249,101 @@ export async function synthesizeResponses(
   nebulaResponse: string,
   perplexityResponse: string,
 ): Promise<string | undefined> {
-  // First synthesis with Claude
-  const claudeSystemPrompt = `You are a crypto trading analyst focused on making immediate Yeet (buy), Jeet (sell), or Hodl (hold) decisions. Synthesize the data to support a clear trading decision. Your response will be used to generate a final analysis with Perplexity AI.
+  const claudeSystemPrompt = `You are YeetorJeet's lead analyst focused on making immediate Yeet (buy), Jeet (sell), or Hodl (hold) decisions. Analyze the data and provide a decisive recommendation formatted in our standard JSON structure. Your analysis should be specific to the token provided.
 
-Onchain transfers of the token in the last 24 hours by hour:
+Available Data:
+${startingData.hourlyTransferCounts ? `Onchain transfers of the token in the last 24 hours by hour:
 ${JSON.stringify(startingData.hourlyTransferCounts)}
 
 Calculated growth score based on on chain transfers (0-100):
-${startingData.growthScore}
+${startingData.growthScore}` : 'No on-chain transfer data available.'}
 
-Token contract ABI:
-${startingData.contractABI ? JSON.stringify(startingData.contractABI) : "unverified"}
+${startingData.contractABI ? `Token contract ABI:
+${JSON.stringify(startingData.contractABI)}` : 'Contract is unverified'}
 
 Onchain/Web3 Perspective (Nebula):
-${nebulaResponse}
+${nebulaResponse || 'No Nebula response available'}
 
 Online Search Engine Perspective (Perplexity):
-${perplexityResponse}
+${perplexityResponse || 'No Perplexity response available'}
 
-Market Data (GeckoTerminal):
-- Current Price: $${startingData.geckoTerminalData?.included?.[0]?.attributes?.base_token_price_usd}
+${startingData.geckoTerminalData ? `Market Data (GeckoTerminal):
+- Current Price: $${startingData.geckoTerminalData?.included?.[0]?.attributes?.base_token_price_usd || 'N/A'}
 - Blockchain ID: ${startingData.chainId}
-- Name: ${startingData.geckoTerminalData?.data.attributes.name}
-- Symbol: ${startingData.geckoTerminalData?.data.attributes.symbol}
+- Name: ${startingData.geckoTerminalData?.data?.attributes?.name || 'N/A'}
+- Symbol: ${startingData.geckoTerminalData?.data?.attributes?.symbol || 'N/A'}
 - Top Pools: ${startingData.geckoTerminalData?.included
     ?.map(
       (p) =>
         `\n  * ${p.attributes.name} (24h Volume: $${p.attributes.volume_usd.h24}, Liquidity: $${p.attributes.reserve_in_usd})`,
     )
-    .join("")}
+    .join("") || 'N/A'}` : 'No market data available from GeckoTerminal'}
 
-Focus on:
+Analysis Requirements:
 1. Price momentum and volatility
 2. On-chain activity and whale movements
 3. Market sentiment and news impact
 4. Risk factors and potential catalysts
 5. User's current holdings and portfolio impact
-6. Suggested position size (% of portfolio)`;
+6. Suggested position size (% of portfolio)
 
-  const claudeSynthesis = await askClaude(
-    "Please synthesize this information to support a Yeet/Jeet/Hodl decision:",
-    claudeSystemPrompt,
-  );
-
-  // Final pass with Perplexity
-  const perplexityFinalPrompt = `You are YeetorJeet's lead analyst. Based on the following synthesized information, provide a decisive Yeet (buy), Jeet (sell), or Hodl (hold) recommendation with specific details on position size and timing. Format your response in our standard JSON structure.
-
-Use this exact JSON structure:
+Response Format:
+You must respond with a JSON object using this exact structure:
 {
-  "summary": "LEAD with the YEET/JEET/HODL decision and recommended position size",
   "sections": [
     {
-      "title": "🎯 YEET/JEET/HODL DECISION",
-      "type": "grid",
-      "items": [
-        { "title": "Decision", "content": "YEET IN | JEET IT | HODL" },
-        { "title": "Position Size", "content": "% of portfolio or $ amount" },
-        { "title": "Timing", "content": "Immediate or specific timeframe" },
-        { "title": "Risk Level", "content": "Low | Medium | High" }
+      "section": "inputs", // get this section from 
+      "tokenInfo": {
+        "address": "string",
+        "name": "${startingData.geckoTerminalData?.data?.attributes?.name || 'N/A'}",
+        "symbol": "${startingData.geckoTerminalData?.data?.attributes?.symbol || 'N/A'}",
+        "price": "string",
+        "marketCap": "string",
+        "chainid": "${startingData.chainId}",
+      },
+      "walletInfo": {
+        "address": "string",
+        "balance": "string",
+        "holdings": "string"
+      }
+    },
+    {
+      "section": "verdict",
+      "type": "buy" | "sell" | "hold",
+      "title": "string", // e.g. "Yeet $3.2k into VVV"
+      "description": "string", // e.g. "Buy ~$3.2k at $62.3m MC"
+      "summary": "string", // e.g. "Yeet (buy) 20% of your portfolio into VVV"
+      "actions": [
+        {
+          "label": "string",
+          "description": "string",
+          "subtext": "string",
+          "recommendedPercentage": number,
+          "txData": {
+            "chainId": number,
+            "data": "string",
+            "to": "string",
+            "value": "string"
+          }
+        }
       ]
     },
     {
-      "title": "Key Metrics",
-      "type": "badges",
-      "items": ["Price Action: 🟢 Bullish | 🔴 Bearish", "Volume: 📈 High | 📉 Low", "Sentiment: 😀 Positive | 😟 Negative"]
-    },
-    {
-      "title": "Decision Rationale",
-      "type": "list",
-      "items": ["Reason 1", "Reason 2", "Reason 3"]
-    },
-    {
-      "title": "Portfolio Impact",
-      "type": "text",
-      "content": "Analysis of how this affects the user's current holdings"
-    },
-    {
-      "title": "Risk Factors",
-      "type": "text",
-      "content": "Key risks and what could change this decision"
+      "section": "details",
+      "content": "string" // Detailed analysis in markdown format including market conditions, technical analysis, and risk factors. This should include a ton of stuff from above and previous data you've pulled. Focus on the token itself.
     }
   ]
 }
 
-Guidelines:
-- Be DECISIVE - always give a clear Yeet, Jeet, or Hodl recommendation
-- Specify exact position sizes (e.g., "Yeet in with 5% of portfolio")
-- Bold important points using **text**
-- Use emojis for visual emphasis
-- Include specific price targets if relevant
-- Consider the user's current holdings and portfolio
-- Always highlight key risks
+Make sure to:
+1. Use actual values from the provided data where available
+2. Format the details section in proper markdown
+3. Include specific transaction data in the actions
+4. Be decisive in the verdict section
+5. Provide clear reasoning in the details section`;
 
-Synthesized Information:
-${claudeSynthesis}`;
-
-  return await askPerplexity(perplexityFinalPrompt);
+  return await askClaude(
+    "Based on the provided information, generate a complete trading analysis and recommendation in the specified JSON format. Ensure all required fields are included and properly formatted.",
+    claudeSystemPrompt,
+  );
 }
