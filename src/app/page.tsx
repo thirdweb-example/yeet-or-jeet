@@ -28,7 +28,52 @@ import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "../components/blocks/Loading";
 import { useState } from "react";
 import { getTokenAnalysis } from "./server-actions/getTokenAnalysis";
-import { PlainTextCodeBlock } from "../components/blocks/code/plaintext-code";
+import { InputsSection } from "../components/blocks/InputsSection";
+import { SourcesSection } from "../components/blocks/SourcesSection";
+import { TradeSummarySection } from "../components/blocks/TradeSummarySection/TradeSummarySection";
+import { MarkdownRenderer } from "../components/blocks/markdown-renderer";
+import { ChevronLeft } from "lucide-react";
+
+type NebulaTxData = {
+  chainId: number;
+  data: `0x${string}`;
+  to: string;
+  value: string;
+};
+
+type Action = {
+  label: string;
+  description: string;
+  subtext: string;
+  recommendedPercentage: number;
+  txData: NebulaTxData;
+};
+
+type Section = {
+  section: "inputs" | "verdict" | "details";
+  type?: "buy" | "sell" | "hold";
+  title?: string;
+  description?: string;
+  summary?: string;
+  actions?: Action[];
+  content?: string;
+  tokenInfo?: {
+    address: string;
+    name: string;
+    symbol: string;
+    price: string;
+    marketCap: string;
+  };
+  walletInfo?: {
+    address: string;
+    balance: string;
+    holdings: string;
+  };
+};
+
+type TokenAnalysis = {
+  sections: Section[];
+};
 
 type Screen =
   | { id: "initial" }
@@ -64,7 +109,12 @@ export default function LandingPage() {
   }
 
   if (screen.id === "response") {
-    return <ResponseScreen {...screen.props} />;
+    return (
+      <ResponseScreen
+        {...screen.props}
+        onBack={() => setScreen({ id: "initial" })}
+      />
+    );
   }
 
   return null;
@@ -99,6 +149,7 @@ function ResponseScreen(props: {
   tokenAddress: string;
   chain: Chain;
   walletAddress: string;
+  onBack: () => void;
 }) {
   const analysisQuery = useQuery({
     queryKey: [
@@ -120,7 +171,7 @@ function ResponseScreen(props: {
         throw new Error(res.error);
       }
 
-      return res.data;
+      return res.data as TokenAnalysis;
     },
     retry: false,
   });
@@ -130,11 +181,101 @@ function ResponseScreen(props: {
   }
 
   if (analysisQuery.data) {
-    const dataStr = JSON.stringify(analysisQuery.data, null, 2);
+    const inputSection = analysisQuery.data.sections.find(
+      (s) => s.section === "inputs",
+    );
+    const verdictSection = analysisQuery.data.sections.find(
+      (s) => s.section === "verdict",
+    );
+    const detailsSection = analysisQuery.data.sections.find(
+      (s) => s.section === "details",
+    );
+
     return (
-      <div className="grow flex flex-col container max-w-6xl py-10">
-        <PlainTextCodeBlock code={dataStr} />
-      </div>
+      <main className="container max-w-6xl mx-auto py-8 px-4 space-y-8">
+        <button
+          onClick={props.onBack}
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronLeft className="size-4" />
+          <span>Back</span>
+        </button>
+
+        {inputSection && (
+          <InputsSection
+            tokenInfo={{
+              name:
+                verdictSection?.tokenInfo?.symbol ||
+                verdictSection?.tokenInfo?.name ||
+                "N/A", // TODO: Get from chain
+              address: props.tokenAddress,
+              priceUSD: verdictSection?.tokenInfo?.price || "0.00",
+              marketCapUSD: verdictSection?.tokenInfo?.marketCap || "0",
+              volumeUSD: "0",
+              tokenIcon: "", // TODO: Get token icon
+              chain: props.chain,
+            }}
+            walletInfo={{
+              name: "Wallet",
+              address: props.walletAddress,
+              balanceUSD: "0",
+              winRate: "0%",
+              realizedPnL: "0",
+              ensImage: "",
+              chain: props.chain,
+            }}
+          />
+        )}
+
+        {/* Sources Section */}
+        <SourcesSection />
+
+        {/* Results Section */}
+        {verdictSection && (
+          <TradeSummarySection
+            variant={verdictSection.type!}
+            title={verdictSection.title!}
+            description={verdictSection.description!}
+            actions={[]}
+          />
+        )}
+
+        {/* Details Section */}
+        {detailsSection && (
+          <div className="space-y-6">
+            <div className="space-y-4 columns-2">
+              <MarkdownRenderer markdownText={detailsSection.content || ""} />
+            </div>
+          </div>
+        )}
+
+        {/* Actions Section */}
+        {verdictSection?.actions && verdictSection.actions.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold">Actions</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {verdictSection.actions.map((action, i) => (
+                <div key={i} className="p-4 rounded-lg border">
+                  <div className="flex-1">
+                    <div className="font-medium">{action.label}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {action.description}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {action.recommendedPercentage}% Recommended
+                    </div>
+                    {action.subtext && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {action.subtext}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </main>
     );
   }
 
@@ -150,7 +291,7 @@ function ResponseScreen(props: {
 
 const formSchema = z.object({
   chainId: z.coerce.number().int().min(1, "Chain is required"),
-  tokenAddress: z.z
+  tokenAddress: z
     .string()
     .min(1, "Token address is required")
     .refine((v) => {

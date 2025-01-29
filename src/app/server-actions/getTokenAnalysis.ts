@@ -117,10 +117,26 @@ export async function getTokenAnalysis(params: {
     };
   }
 
-  const parsedSynthesis = JSON.parse(synthesis);
+  // Clean the string before parsing
+  const cleanedSynthesis = synthesis
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove control characters
+    .replace(/\\n/g, "\\n") // Properly escape newlines
+    .replace(/\\"/g, '\\"') // Properly escape quotes
+    .trim();
 
-  return {
-    ok: true,
-    data: parsedSynthesis,
-  };
+  try {
+    const parsedSynthesis = JSON.parse(cleanedSynthesis) as TokenAnalysis;
+
+    return {
+      ok: true,
+      data: parsedSynthesis,
+    };
+  } catch (error) {
+    console.error("JSON Parse Error:", error);
+    console.error("Cleaned Synthesis:", cleanedSynthesis);
+    return {
+      ok: false,
+      error: "Failed to parse analysis results",
+    };
+  }
 }

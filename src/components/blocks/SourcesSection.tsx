@@ -19,7 +19,7 @@ export function SourcesSection() {
 
   return (
     <section>
-      <h2 className="text-2xl font-semibold tracking-tight mb-3">Sources</h2>
+      <h3 className="text-lg font-semibold tracking-tight mb-3">Sources</h3>
       <div className="flex items-center gap-3">
         {sources.map((source) => {
           return (

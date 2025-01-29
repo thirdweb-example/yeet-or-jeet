@@ -150,7 +150,7 @@ export function InputsSection(props: {
   return (
     <section>
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight mb-3">Inputs</h2>
+        <h2 className="text-lg font-semibold tracking-tight mb-3">Inputs</h2>
       </div>
       <div className="flex flex-col lg:flex-row gap-4 lg:[&>*]:min-w-[400px]">
         <TokenInfoCard {...props.tokenInfo} />
