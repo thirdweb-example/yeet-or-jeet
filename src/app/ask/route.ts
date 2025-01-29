@@ -14,7 +14,16 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const tokenAddress = requestUrl.searchParams.get("token");
   const walletAddress = requestUrl.searchParams.get("wallet");
-  const chainId = Number(requestUrl.searchParams.get("chain")) || 8453;
+  const chainIdStr = requestUrl.searchParams.get("chain");
+
+  if (!chainIdStr) {
+    return NextResponse.json(
+      { success: false, error: "Missing chain" },
+      { status: 400 },
+    );
+  }
+
+  const chainId = Number(chainIdStr);
 
   if (!tokenAddress) {
     return NextResponse.json(
@@ -22,6 +31,7 @@ export async function GET(request: NextRequest) {
       { status: 400 },
     );
   }
+
   if (!isValidEvmAddress(tokenAddress)) {
     return NextResponse.json(
       { success: false, error: "Invalid token address" },
