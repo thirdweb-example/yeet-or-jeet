@@ -21,9 +21,6 @@ export const metadata: Metadata = {
   description: "Instant Trading Decisions",
 };
 
-// 3 minutes
-export const maxDuration = 3 * 60;
-
 export default function RootLayout({
   children,
 }: Readonly<{
