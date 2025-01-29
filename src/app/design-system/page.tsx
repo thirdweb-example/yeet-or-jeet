@@ -1,7 +1,6 @@
 "use client";
 
 import { SourcesSection } from "@/components/blocks/SourcesSection";
-import { ThemeToggleButton } from "../../components/blocks/toggle-theme";
 import { InputsSection } from "../../components/blocks/InputsSection";
 import { TokenInputSection } from "../../components/blocks/TokenInputSection";
 import { Loading } from "../../components/blocks/Loading";
@@ -116,12 +115,9 @@ function example() {
 export default function StyleguidePage() {
   return (
     <div className="container py-10 max-w-6xl">
-      <div className="pb-6 border-b mb-10 flex justify-between gap-5">
-        <h1 className="text-4xl lg:text-5xl font-semibold tracking-tight">
-          Design System
-        </h1>
-        <ThemeToggleButton />
-      </div>
+      <h1 className="text-4xl font-semibold tracking-tight mb-10">
+        Design System
+      </h1>
 
       <div className="flex flex-col gap-10">
         <TokenInputSection address="0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf" />

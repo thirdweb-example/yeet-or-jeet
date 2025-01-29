@@ -1,3 +1,5 @@
+"use client";
+
 import { ConnectButton } from "thirdweb/react";
 import { useTheme } from "next-themes";
 import { thirdwebClient } from "../../lib/thirdweb-client";

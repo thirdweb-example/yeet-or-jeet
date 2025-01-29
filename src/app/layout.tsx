@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/components/providers/theme-provider";
 import "./globals.css";
-import { AutoConnect, ThirdwebProvider } from "thirdweb/react";
-import { thirdwebClient } from "../lib/thirdweb-client";
+import { CustomizedConnectButton } from "../components/blocks/CustomConnectButton";
+import { ThemeToggleButton } from "../components/blocks/toggle-theme";
+import Link from "next/link";
+import { Providers } from "../components/providers/Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,18 +29,39 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-dvh flex flex-col bg-background text-foreground`}
       >
-        <ThirdwebProvider>
-          <AutoConnect client={thirdwebClient} />
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
-        </ThirdwebProvider>
+        <Providers>
+          <header className="border-b border-border">
+            <div className="container max-w-6xl mx-auto flex justify-between items-center py-3 px-4">
+              <Link
+                className="text-3xl font-extrabold tracking-tight flex items-center gap-1.5"
+                href="/"
+              >
+                YoJ
+              </Link>
+
+              <div className="flex items-center gap-3">
+                <CustomizedConnectButton />
+                <ThemeToggleButton />
+              </div>
+            </div>
+          </header>
+
+          <div className="grow flex flex-col">{children}</div>
+
+          <footer className="border-t border-border py-4">
+            <div className="container max-w-6xl mx-auto text-center text-muted-foreground px-5">
+              <Link
+                className="text-sm hover:text-foreground"
+                href="https://thirdweb.com/"
+                target="_blank"
+              >
+                Powered by thirdweb
+              </Link>
+            </div>
+          </footer>
+        </Providers>
       </body>
     </html>
   );

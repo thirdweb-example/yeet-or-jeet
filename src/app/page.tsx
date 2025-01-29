@@ -13,12 +13,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { ThemeToggleButton } from "../components/blocks/toggle-theme";
-import Link from "next/link";
 import { CustomizedConnectButton } from "../components/blocks/CustomConnectButton";
-import { isAddress } from "thirdweb";
+import { isAddress, type Chain } from "thirdweb";
 import { useActiveAccount } from "thirdweb/react";
-import { TrendingUpDownIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -27,24 +24,58 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { defaultSelectedChain, supportedChains } from "../lib/supportedChains";
+import { useQuery } from "@tanstack/react-query";
+import { LoadingSpinner } from "../components/blocks/Loading";
+import { useState } from "react";
+import { getTokenAnalysis } from "./server-actions/getTokenAnalysis";
+import { PlainTextCodeBlock } from "../components/blocks/code/plaintext-code";
+
+type Screen =
+  | { id: "initial" }
+  | {
+      id: "response";
+      props: {
+        tokenAddress: string;
+        chain: Chain;
+        walletAddress: string;
+      };
+    };
 
 export default function LandingPage() {
-  return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="border-b border-border">
-        <div className="container max-w-6xl mx-auto flex justify-between items-center py-3 px-4">
-          <div className="text-3xl font-extrabold tracking-tight flex items-center gap-1.5">
-            YoJ
-            <TrendingUpDownIcon className="size-6 text-foreground" />
-          </div>
-          <div className="flex items-center gap-3">
-            <CustomizedConnectButton />
-            <ThemeToggleButton />
-          </div>
-        </div>
-      </header>
+  const [screen, setScreen] = useState<Screen>({ id: "initial" });
 
-      <main className="flex-grow flex flex-col items-center justify-center p-6">
+  if (screen.id === "initial") {
+    return (
+      <LandingPageScreen
+        onSubmit={(values) => {
+          setScreen({
+            id: "response",
+            props: {
+              tokenAddress: values.tokenAddress,
+              chain:
+                supportedChains.find((chain) => chain.id === values.chainId) ||
+                defaultSelectedChain,
+              walletAddress: "0x1234567890123456789012345678901234567890",
+            },
+          });
+        }}
+      />
+    );
+  }
+
+  if (screen.id === "response") {
+    return <ResponseScreen {...screen.props} />;
+  }
+
+  return null;
+}
+
+function LandingPageScreen(props: {
+  onSubmit: (values: z.infer<typeof formSchema>) => void;
+}) {
+  return (
+    <main className="grow flex flex-col">
+      <div className="flex-grow flex flex-col items-center justify-center p-6">
         <h1 className="text-6xl lg:text-8xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-t dark:bg-gradient-to-b from-foreground to-foreground/70 tracking-tight inline-flex gap-2 lg:gap-3 items-center">
           <span>Yeet</span>
           <span className="italic font-bold ml-1">or</span>
@@ -54,20 +85,65 @@ export default function LandingPage() {
           Instant Trading Decisions
         </p>
 
-        <TokenForm />
-      </main>
+        <TokenForm
+          onSubmit={(values) => {
+            props.onSubmit(values);
+          }}
+        />
+      </div>
+    </main>
+  );
+}
 
-      <footer className="border-t border-border py-4">
-        <div className="container max-w-6xl mx-auto text-center text-muted-foreground px-5">
-          <Link
-            className="text-sm hover:text-foreground"
-            href="https://thirdweb.com/"
-            target="_blank"
-          >
-            Powered by thirdweb
-          </Link>
-        </div>
-      </footer>
+function ResponseScreen(props: {
+  tokenAddress: string;
+  chain: Chain;
+  walletAddress: string;
+}) {
+  const analysisQuery = useQuery({
+    queryKey: [
+      "response",
+      {
+        tokenAddress: props.tokenAddress,
+        chain: props.chain.id,
+        walletAddress: props.walletAddress,
+      },
+    ],
+    queryFn: async () => {
+      const res = await getTokenAnalysis({
+        chainId: props.chain.id,
+        tokenAddress: props.tokenAddress,
+        walletAddress: props.walletAddress,
+      });
+
+      if (!res.ok) {
+        throw new Error(res.error);
+      }
+
+      return res.data;
+    },
+    retry: false,
+  });
+
+  if (analysisQuery.isError) {
+    console.error(analysisQuery.error);
+  }
+
+  if (analysisQuery.data) {
+    const dataStr = JSON.stringify(analysisQuery.data, null, 2);
+    return (
+      <div className="grow flex flex-col container max-w-6xl py-10">
+        <PlainTextCodeBlock code={dataStr} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grow flex flex-col container max-w-6xl py-10 items-center justify-center">
+      {analysisQuery.isPending && <LoadingSpinner className="size-10" />}
+      {analysisQuery.isError && (
+        <p className="text-red-500">Failed to get response </p>
+      )}
     </div>
   );
 }
@@ -87,7 +163,9 @@ const formSchema = z.object({
     }, "Invalid token address"),
 });
 
-function TokenForm() {
+function TokenForm(props: {
+  onSubmit: (values: z.infer<typeof formSchema>) => void;
+}) {
   const account = useActiveAccount();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -98,8 +176,7 @@ function TokenForm() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    // Add your analysis logic here
+    props.onSubmit(values);
   }
 
   return (
