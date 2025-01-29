@@ -125,7 +125,7 @@ export async function getTokenAnalysis(params: {
     .trim();
 
   try {
-    const parsedSynthesis = JSON.parse(cleanedSynthesis);
+    const parsedSynthesis = JSON.parse(cleanedSynthesis) as TokenAnalysis;
     
     return {
       ok: true,
