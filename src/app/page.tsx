@@ -1,8 +1,13 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
+import { getTokenAnalysis } from "./server-actions/getTokenAnalysis";
+import { isAddress, type Chain } from "thirdweb";
+import { useActiveAccount } from "thirdweb/react";
+
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -14,8 +19,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { CustomizedConnectButton } from "../components/blocks/CustomConnectButton";
-import { isAddress, type Chain } from "thirdweb";
-import { useActiveAccount } from "thirdweb/react";
 import {
   Select,
   SelectContent,
@@ -24,10 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { defaultSelectedChain, supportedChains } from "../lib/supportedChains";
-import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "../components/blocks/Loading";
 import { useState } from "react";
-import { getTokenAnalysis } from "./server-actions/getTokenAnalysis";
 import { InputsSection } from "../components/blocks/InputsSection";
 import { SourcesSection } from "../components/blocks/SourcesSection";
 import { TradeSummarySection } from "../components/blocks/TradeSummarySection/TradeSummarySection";
@@ -88,6 +89,7 @@ type Screen =
 
 export default function LandingPage() {
   const [screen, setScreen] = useState<Screen>({ id: "initial" });
+  const account = useActiveAccount();
 
   if (screen.id === "initial") {
     return (
@@ -100,7 +102,7 @@ export default function LandingPage() {
               chain:
                 supportedChains.find((chain) => chain.id === values.chainId) ||
                 defaultSelectedChain,
-              walletAddress: "0x1234567890123456789012345678901234567890",
+              walletAddress: account?.address || "",
             },
           });
         }}

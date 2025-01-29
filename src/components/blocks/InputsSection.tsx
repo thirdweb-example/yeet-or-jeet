@@ -2,6 +2,8 @@ import type { Chain } from "thirdweb";
 import { Img } from "../ui/Img";
 import Link from "next/link";
 import { cn } from "../../lib/utils";
+import { useState, useEffect } from "react";
+import { getWalletStats } from "../../lib/helpers/cielo";
 
 type TokenInfo = {
   name: string;
@@ -10,6 +12,16 @@ type TokenInfo = {
   marketCapUSD: string;
   volumeUSD: string;
   tokenIcon: string;
+  chain: Chain;
+};
+
+type WalletInfo = {
+  name: string | undefined;
+  address: string;
+  balanceUSD: string;
+  winRate: string;
+  realizedPnL: string;
+  ensImage: string;
   chain: Chain;
 };
 
@@ -54,33 +66,61 @@ export function TokenInfoCard(props: TokenInfo) {
               </Link>
             ) : (
               props.name
-            )}{" "}
-            ({shortenAddress(props.address)})
+            )}
           </h3>
-          <p> {props.priceUSD}</p>
+          <p>${props.priceUSD}</p>
         </div>
 
         {/* Row 2 */}
         <div className="gap-3 flex items-center text-xs text-muted-foreground">
-          <p> MC: {props.marketCapUSD}</p>
-          <p> Vol: {props.volumeUSD}</p>
+          <p>Market Cap: ${props.marketCapUSD}</p>
+          <p>Volume: ${props.volumeUSD}</p>
         </div>
       </div>
     </div>
   );
 }
 
-type WalletInfo = {
-  name: string | undefined;
-  address: string;
-  balanceUSD: string;
-  winRate: string;
-  realizedPnL: string;
-  ensImage: string;
-  chain: Chain;
-};
-
 export function WalletInfoCard(props: WalletInfo) {
+  const [walletStats, setWalletStats] = useState<{
+    winrate: number;
+    combined_pnl_usd: number;
+  } | null>(null);
+
+  useEffect(() => {
+    async function fetchWalletStats() {
+      if (!props.address) return;
+
+      // Convert chain ID to chain name
+      const chainMap: Record<number, string> = {
+        1: "ethereum",
+        137: "polygon",
+        56: "bsc",
+        42161: "arbitrum",
+        10: "optimism",
+        8453: "base",
+      };
+
+      console.log("Chain conversion:", {
+        chainId: props.chain.id,
+        chainName: chainMap[props.chain.id || 1] || "ethereum",
+      });
+
+      const stats = await getWalletStats(
+        props.address,
+        chainMap[props.chain.id || 1] || "ethereum",
+      );
+      if (stats) {
+        setWalletStats({
+          winrate: stats.winrate,
+          combined_pnl_usd: stats.combined_pnl_usd,
+        });
+      }
+    }
+
+    fetchWalletStats();
+  }, [props.address, props.chain.id]);
+
   const explorer = props.chain.blockExplorers?.[0].url;
   const explorerLink = explorer
     ? `${explorer}/address/${props.address}`
@@ -126,13 +166,23 @@ export function WalletInfoCard(props: WalletInfo) {
             )}{" "}
             {props.name && <>({shortenAddress(props.address)})</>}
           </h3>
-          <p> {props.balanceUSD}</p>
+          <p>{props.balanceUSD}</p>
         </div>
 
         {/* Row 2 */}
         <div className="gap-3 flex items-center text-xs text-muted-foreground">
-          <p> Win rate: {props.winRate}</p>
-          <p> Realized P&L: {props.realizedPnL}</p>
+          <p>
+            Win rate: {walletStats ? `${walletStats.winrate}%` : props.winRate}
+          </p>
+          <p>
+            P&L:{" "}
+            {walletStats
+              ? `$${walletStats.combined_pnl_usd.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`
+              : props.realizedPnL}
+          </p>
         </div>
       </div>
     </div>
@@ -140,7 +190,7 @@ export function WalletInfoCard(props: WalletInfo) {
 }
 
 function shortenAddress(address: string) {
-  return `${address.slice(0, 6)}...`;
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
 export function InputsSection(props: {
@@ -150,11 +200,10 @@ export function InputsSection(props: {
   return (
     <section>
       <div>
-        <h2 className="text-lg font-semibold tracking-tight mb-3">Inputs</h2>
-      </div>
-      <div className="flex flex-col lg:flex-row gap-4 lg:[&>*]:min-w-[400px]">
-        <TokenInfoCard {...props.tokenInfo} />
-        <WalletInfoCard {...props.walletInfo} />
+        <div className="flex flex-col lg:flex-row gap-4 lg:[&>*]:min-w-[400px]">
+          <TokenInfoCard {...props.tokenInfo} />
+          <WalletInfoCard {...props.walletInfo} />
+        </div>
       </div>
     </section>
   );

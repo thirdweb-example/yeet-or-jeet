@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { StartingData } from "./info";
+import { getWalletStats, getTokenPnL } from "./cielo";
 
 const perplexityApiKey = process.env.PERPLEXITY_API_KEY;
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
@@ -249,6 +250,42 @@ export async function synthesizeResponses(
   nebulaResponse: string,
   perplexityResponse: string,
 ): Promise<string | undefined> {
+  const walletStats = await getWalletStats(
+    startingData.userWalletAddress,
+    getChainName(startingData.chainId),
+  );
+  const tokenPnL = await getTokenPnL(
+    startingData.userWalletAddress,
+    startingData.tokenAddress,
+    getChainName(startingData.chainId),
+  );
+
+  let walletContext = "";
+  if (walletStats) {
+    walletContext = `
+Wallet Performance:
+- Overall win rate: ${walletStats.winrate}%
+- Total PnL: $${walletStats.combined_pnl_usd.toFixed(2)}
+- Tokens traded: ${walletStats.tokens_traded}
+- Average holding time: ${walletStats.average_holding_time.toFixed(1)} days
+`;
+  }
+
+  let tokenContext = "";
+  if (tokenPnL) {
+    tokenContext = `
+Token-Specific Performance:
+- Number of trades: ${tokenPnL.num_swaps}
+- Total bought: $${tokenPnL.total_buy_usd.toFixed(2)}
+- Total sold: $${tokenPnL.total_sell_usd.toFixed(2)}
+- Token PnL: $${tokenPnL.total_pnl_usd.toFixed(2)} (${tokenPnL.roi_percentage.toFixed(2)}% ROI)
+- Average buy price: $${tokenPnL.average_buy_price.toFixed(6)}
+- Average sell price: $${tokenPnL.average_sell_price.toFixed(6)}
+`;
+  }
+
+  const userContext = `${walletContext}\n${tokenContext}`.trim();
+
   const claudeSystemPrompt = `You are YeetorJeet's lead analyst focused on making immediate Yeet (buy), Jeet (sell), or Hodl (hold) decisions. Analyze the data and provide a decisive recommendation formatted in our standard JSON structure. Your analysis should be specific to the token provided.
 
 Available Data:
@@ -292,6 +329,9 @@ ${
       }`
     : "No market data available from GeckoTerminal"
 }
+
+User Context:
+${userContext}
 
 Analysis Requirements:
 1. Price momentum and volatility
@@ -362,4 +402,17 @@ Make sure to:
     "Based on the provided information, generate a complete trading analysis and recommendation in the specified JSON format. Ensure all required fields are included and properly formatted.",
     claudeSystemPrompt,
   );
+}
+
+function getChainName(chainId: number): string {
+  const chainMap: Record<number, string> = {
+    1: "ethereum",
+    137: "polygon",
+    56: "bsc",
+    42161: "arbitrum",
+    10: "optimism",
+    8453: "base",
+    // Add more chains as needed
+  };
+  return chainMap[chainId] || "ethereum";
 }
