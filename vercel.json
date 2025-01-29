@@ -1,0 +1,10 @@
+{
+  "github": {
+    "autoJobCancelation": true
+  },
+  "functions": {
+    "src/app/**/*": {
+      "maxDuration": 300
+    }
+  }
+}
