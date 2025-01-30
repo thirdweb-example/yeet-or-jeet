@@ -135,15 +135,34 @@ export default function StyleguidePage() {
             chain: base,
           }}
           walletInfo={{
-            address: "0x1F846F6DAE38E1C88D71EAA191760B15f38B7A37",
+            address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
             balanceUSD: "$32.2k",
             chain: base,
-            ensImage: "",
-            name: "example.eth",
             realizedPnL: "$25.3k (25.3%)",
             winRate: "34%",
           }}
         />
+
+        <InputsSection
+          tokenInfo={{
+            name: "VVV",
+            tokenIcon:
+              "https://cryptologos.cc/logos/usd-coin-usdc-logo.svg?v=040",
+            address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            priceUSD: "$32.23",
+            marketCapUSD: "$62.23m",
+            volumeUSD: "$523.3m",
+            chain: base,
+          }}
+          walletInfo={{
+            address: "0x1F846F6DAE38E1C88D71EAA191760B15f38B7A37",
+            balanceUSD: "$32.2k",
+            chain: base,
+            realizedPnL: "$25.3k (25.3%)",
+            winRate: "34%",
+          }}
+        />
+
         <TradeSummarySection
           variant="sell"
           title="Jeet 20% of your VVV"

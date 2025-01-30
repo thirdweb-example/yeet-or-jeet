@@ -224,12 +224,10 @@ function ResponseScreen(props: {
             chain: props.chain,
           }}
           walletInfo={{
-            name: undefined,
             address: props.walletAddress,
             balanceUSD: "0",
             winRate: "0%",
             realizedPnL: "0",
-            ensImage: "",
             chain: props.chain,
           }}
         />
