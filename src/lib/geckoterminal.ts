@@ -150,21 +150,10 @@ export async function getTokenInfoForPool(
 
 export const fetchPoolInfo = async (
   chainId: number,
-  fromTokenAddress: string,
-  toTokenAddress: string,
-  tokenInfo: TokenInfo
-): Promise<{ tokenInfo: TokenInfo; poolInfo: PoolInfo }> => {
-  const pool = tokenInfo.pools?.find(
-    (pool) =>
-      (pool.relationships.baseToken == fromTokenAddress.toLowerCase() &&
-        pool.relationships.quoteToken == toTokenAddress.toLowerCase()) ||
-      (pool.relationships.baseToken == toTokenAddress.toLowerCase() &&
-        pool.relationships.quoteToken == fromTokenAddress.toLowerCase())
-  );
-  const poolAddress = pool?.address;
-
+  poolAddress: string
+): Promise<PoolInfo> => {
   if (!poolAddress) throw new Error("Pool not found");
   const poolInfo = await getTokenInfoForPool(chainId, poolAddress);
 
-  return { tokenInfo, poolInfo };
+  return poolInfo;
 };

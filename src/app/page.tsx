@@ -1,8 +1,13 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
+import { getTokenAnalysis } from "./server-actions/getTokenAnalysis";
+import { isAddress, type Chain } from "thirdweb";
+import { useActiveAccount } from "thirdweb/react";
+
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -13,12 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { ThemeToggleButton } from "../components/blocks/toggle-theme";
-import Link from "next/link";
 import { CustomizedConnectButton } from "../components/blocks/CustomConnectButton";
-import { isAddress } from "thirdweb";
-import { useActiveAccount } from "thirdweb/react";
-import { TrendingUpDownIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -27,24 +27,109 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { defaultSelectedChain, supportedChains } from "../lib/supportedChains";
+import { LoadingSpinner } from "../components/blocks/Loading";
+import { useState, useEffect } from "react";
+import { InputsSection } from "../components/blocks/InputsSection";
+import { SourcesSection } from "../components/blocks/SourcesSection";
+import { TradeSummarySection } from "../components/blocks/TradeSummarySection/TradeSummarySection";
+import { MarkdownRenderer } from "../components/blocks/markdown-renderer";
+import { ChevronLeft } from "lucide-react";
+import { getErc20TokensForAddress } from "@/lib/helpers/insight";
+import { Swap } from "@/components/swap/swap";
+
+type NebulaTxData = {
+  chainId: number;
+  data: `0x${string}`;
+  to: string;
+  value: string;
+};
+
+type Action = {
+  label: string;
+  description: string;
+  subtext: string;
+  recommendedPercentage: number;
+  txData: NebulaTxData;
+};
+
+type Section = {
+  section: "inputs" | "verdict" | "details";
+  type?: "buy" | "sell" | "hold";
+  title?: string;
+  description?: string;
+  summary?: string;
+  actions?: Action[];
+  content?: string;
+  tokenInfo?: {
+    address: string;
+    name: string;
+    symbol: string;
+    price: string;
+    marketCap: string;
+  };
+  walletInfo?: {
+    address: string;
+    balance: string;
+    holdings: string;
+  };
+};
+
+type TokenAnalysis = {
+  sections: Section[];
+};
+
+type Screen =
+  | { id: "initial" }
+  | {
+      id: "response";
+      props: {
+        tokenAddress: string;
+        chain: Chain;
+        walletAddress: string;
+      };
+    };
 
 export default function LandingPage() {
-  return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="border-b border-border">
-        <div className="container max-w-6xl mx-auto flex justify-between items-center py-3 px-4">
-          <div className="text-3xl font-extrabold tracking-tight flex items-center gap-1.5">
-            YoJ
-            <TrendingUpDownIcon className="size-6 text-foreground" />
-          </div>
-          <div className="flex items-center gap-3">
-            <CustomizedConnectButton />
-            <ThemeToggleButton />
-          </div>
-        </div>
-      </header>
+  const [screen, setScreen] = useState<Screen>({ id: "initial" });
+  const account = useActiveAccount();
 
-      <main className="flex-grow flex flex-col items-center justify-center p-6">
+  if (screen.id === "initial") {
+    return (
+      <LandingPageScreen
+        onSubmit={(values) => {
+          setScreen({
+            id: "response",
+            props: {
+              tokenAddress: values.tokenAddress,
+              chain:
+                supportedChains.find((chain) => chain.id === values.chainId) ||
+                defaultSelectedChain,
+              walletAddress: account?.address || "",
+            },
+          });
+        }}
+      />
+    );
+  }
+
+  if (screen.id === "response") {
+    return (
+      <ResponseScreen
+        {...screen.props}
+        onBack={() => setScreen({ id: "initial" })}
+      />
+    );
+  }
+
+  return null;
+}
+
+function LandingPageScreen(props: {
+  onSubmit: (values: z.infer<typeof formSchema>) => void;
+}) {
+  return (
+    <main className="grow flex flex-col">
+      <div className="flex-grow flex flex-col items-center justify-center p-6">
         <h1 className="text-6xl lg:text-8xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-t dark:bg-gradient-to-b from-foreground to-foreground/70 tracking-tight inline-flex gap-2 lg:gap-3 items-center">
           <span>Yeet</span>
           <span className="italic font-bold ml-1">or</span>
@@ -54,27 +139,174 @@ export default function LandingPage() {
           Instant Trading Decisions
         </p>
 
-        <TokenForm />
-      </main>
+        <TokenForm
+          onSubmit={(values) => {
+            props.onSubmit(values);
+          }}
+        />
+      </div>
+    </main>
+  );
+}
 
-      <footer className="border-t border-border py-4">
-        <div className="container max-w-6xl mx-auto text-center text-muted-foreground px-5">
-          <Link
-            className="text-sm hover:text-foreground"
-            href="https://thirdweb.com/"
-            target="_blank"
-          >
-            Powered by thirdweb
-          </Link>
+function ResponseScreen(props: {
+  tokenAddress: string;
+  chain: Chain;
+  walletAddress: string;
+  onBack: () => void;
+}) {
+  const [showSources, setShowSources] = useState(false);
+
+  const analysisQuery = useQuery({
+    queryKey: [
+      "response",
+      {
+        tokenAddress: props.tokenAddress,
+        chain: props.chain.id,
+        walletAddress: props.walletAddress,
+      },
+    ],
+    queryFn: async () => {
+      const res = await getTokenAnalysis({
+        chainId: props.chain.id,
+        tokenAddress: props.tokenAddress,
+        walletAddress: props.walletAddress,
+      });
+
+      if (!res.ok) {
+        throw new Error(res.error);
+      }
+
+      return res.data as TokenAnalysis;
+    },
+    retry: false,
+  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSources(true), 6600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // const inputSection = analysisQuery.data?.sections.find(
+  //   (s) => s.section === "inputs"
+  // );
+  const verdictSection = analysisQuery.data?.sections.find(
+    (s) => s.section === "verdict",
+  );
+  const detailsSection = analysisQuery.data?.sections.find(
+    (s) => s.section === "details",
+  );
+
+  return (
+    <main className="container max-w-6xl mx-auto py-8 px-4 space-y-4">
+      <button
+        onClick={props.onBack}
+        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ChevronLeft className="size-4" />
+        <span>Back</span>
+      </button>
+
+      <div className="animate-in fade-in slide-in-from-bottom-4">
+        <InputsSection
+          tokenInfo={{
+            name:
+              verdictSection?.tokenInfo?.symbol ||
+              verdictSection?.tokenInfo?.name ||
+              "N/A",
+            address: props.tokenAddress,
+            priceUSD: verdictSection?.tokenInfo?.price || "0.00",
+            marketCapUSD: verdictSection?.tokenInfo?.marketCap || "0",
+            volumeUSD: "0",
+            tokenIcon: "",
+            chain: props.chain,
+          }}
+          walletInfo={{
+            name: undefined,
+            address: props.walletAddress,
+            balanceUSD: "0",
+            winRate: "0%",
+            realizedPnL: "0",
+            ensImage: "",
+            chain: props.chain,
+          }}
+        />
+      </div>
+
+      {showSources && (
+        <div className="animate-in fade-in slide-in-from-bottom-4">
+          <SourcesSection />
         </div>
-      </footer>
-    </div>
+      )}
+
+      {analysisQuery.isLoading && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <LoadingSpinner className="size-4" />
+          <span>Analyzing token data...</span>
+        </div>
+      )}
+
+      {analysisQuery.isSuccess && (
+        <>
+          {verdictSection && (
+            <div className="animate-in fade-in slide-in-from-bottom-4">
+              <TradeSummarySection
+                variant={verdictSection.type!}
+                title={verdictSection.title!}
+                description={verdictSection.description!}
+                actions={[]}
+              />
+            </div>
+          )}
+
+          {detailsSection && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+              <div className="space-y-4 columns-2">
+                <MarkdownRenderer markdownText={detailsSection.content || ""} />
+              </div>
+            </div>
+          )}
+
+          {verdictSection?.actions && verdictSection.actions.length > 0 && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+              <h3 className="text-xl font-semibold">Actions</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {verdictSection.actions.map((action, i) => (
+                  <div key={i} className="p-4 rounded-lg border">
+                    <div className="flex-1">
+                      <div className="font-medium">{action.label}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {action.description}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {action.recommendedPercentage}% Recommended
+                      </div>
+                      {action.subtext && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {action.subtext}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {analysisQuery.isError && (
+        <div className="text-red-500">
+          Error loading data: {analysisQuery.error.message}
+        </div>
+      )}
+    </main>
   );
 }
 
 const formSchema = z.object({
   chainId: z.coerce.number().int().min(1, "Chain is required"),
-  tokenAddress: z.z
+  tokenAddress: z
     .string()
     .min(1, "Token address is required")
     .refine((v) => {
@@ -87,7 +319,9 @@ const formSchema = z.object({
     }, "Invalid token address"),
 });
 
-function TokenForm() {
+function TokenForm(props: {
+  onSubmit: (values: z.infer<typeof formSchema>) => void;
+}) {
   const account = useActiveAccount();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -98,8 +332,7 @@ function TokenForm() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    // Add your analysis logic here
+    props.onSubmit(values);
   }
 
   return (
@@ -167,6 +400,8 @@ function TokenForm() {
           </Button>
         )}
       </form>
+      <Swap/>
     </Form>
   );
 }
+

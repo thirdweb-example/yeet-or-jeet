@@ -17,7 +17,7 @@ const alertVariants = cva(
     defaultVariants: {
       variant: "default",
     },
-  }
+  },
 );
 
 const Alert = React.forwardRef<
@@ -53,7 +53,7 @@ const AlertDescription = React.forwardRef<
     ref={ref}
     className={cn(
       "mt-1.5 text-muted-foreground text-sm [&_p]:leading-relaxed",
-      className
+      className,
     )}
     {...props}
   />
