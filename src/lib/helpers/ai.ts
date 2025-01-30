@@ -384,7 +384,7 @@ You must respond with a JSON object using this exact structure:
     },
     {
       "section": "details",
-      "content": "string" // Detailed analysis in markdown format including market conditions, technical analysis, and risk factors. This should include a ton of stuff from above and previous data you've pulled. Focus on the token itself. Be concise, dense, and note-taking in your structure, no need for complete sentences. You don't need a title for this section. Use emojis sparcely where appropriate.
+      "content": "string" // Detailed analysis in markdown format including market conditions, technical analysis, and risk factors. This should include a ton of stuff from above and previous data you've pulled. Focus on the token itself. Be concise, dense, and note-taking in your structure, no need for complete sentences. You don't need a title for this section. Use emojis sparcely where appropriate. Make sure to space out so that it becomes multiple sections.
     }
   ]
 }
