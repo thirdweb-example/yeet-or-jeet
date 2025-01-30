@@ -2,8 +2,8 @@ import type { Chain } from "thirdweb";
 import { Img } from "../ui/Img";
 import Link from "next/link";
 import { cn } from "../../lib/utils";
-import { useState, useEffect } from "react";
-import { getWalletStats } from "../../lib/helpers/cielo";
+import { useQuery } from "@tanstack/react-query";
+import { getWalletStatsAction } from "../../app/server-actions/getWalletStatsAction";
 
 type TokenInfo = {
   name: string;
@@ -81,45 +81,26 @@ export function TokenInfoCard(props: TokenInfo) {
   );
 }
 
+const chainMap: Record<number, string> = {
+  1: "ethereum",
+  137: "polygon",
+  56: "bsc",
+  42161: "arbitrum",
+  10: "optimism",
+  8453: "base",
+};
+
 export function WalletInfoCard(props: WalletInfo) {
-  const [walletStats, setWalletStats] = useState<{
-    winrate: number;
-    combined_pnl_usd: number;
-  } | null>(null);
-
-  useEffect(() => {
-    async function fetchWalletStats() {
-      if (!props.address) return;
-
-      // Convert chain ID to chain name
-      const chainMap: Record<number, string> = {
-        1: "ethereum",
-        137: "polygon",
-        56: "bsc",
-        42161: "arbitrum",
-        10: "optimism",
-        8453: "base",
-      };
-
-      console.log("Chain conversion:", {
-        chainId: props.chain.id,
-        chainName: chainMap[props.chain.id || 1] || "ethereum",
-      });
-
-      const stats = await getWalletStats(
+  const walletStatsQuery = useQuery({
+    queryKey: ["walletStats", props.address, props.chain.id],
+    queryFn: async () => {
+      return getWalletStatsAction(
         props.address,
         chainMap[props.chain.id || 1] || "ethereum",
       );
-      if (stats) {
-        setWalletStats({
-          winrate: stats.winrate,
-          combined_pnl_usd: stats.combined_pnl_usd,
-        });
-      }
-    }
-
-    fetchWalletStats();
-  }, [props.address, props.chain.id]);
+    },
+    retry: false,
+  });
 
   const explorer = props.chain.blockExplorers?.[0].url;
   const explorerLink = explorer
@@ -172,15 +153,21 @@ export function WalletInfoCard(props: WalletInfo) {
         {/* Row 2 */}
         <div className="gap-3 flex items-center text-xs text-muted-foreground">
           <p>
-            Win rate: {walletStats ? `${walletStats.winrate}%` : props.winRate}
+            Win rate:{" "}
+            {walletStatsQuery.data
+              ? `${walletStatsQuery.data.winrate}%`
+              : props.winRate}
           </p>
           <p>
             P&L:{" "}
-            {walletStats
-              ? `$${walletStats.combined_pnl_usd.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}`
+            {walletStatsQuery.data
+              ? `$${walletStatsQuery.data.combined_pnl_usd.toLocaleString(
+                  undefined,
+                  {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  },
+                )}`
               : props.realizedPnL}
           </p>
         </div>

@@ -50,12 +50,17 @@ interface TotalStatsResponse {
   data: TotalStats;
 }
 
-const CIELO_API_KEY = process.env.CIELO_API_KEY;
+const CIELO_API_KEY = process.env.CIELO_API_KEY || "";
+
+if (!CIELO_API_KEY) {
+  throw new Error("Missing CIELO_API_KEY environment variable");
+}
+
 const CIELO_API_BASE = "https://feed-api.cielo.finance/api/v1";
 
 export async function getWalletStats(
   walletAddress: string,
-  chain?: string,
+  chain: string,
   timeframe: "1d" | "7d" | "30d" | "max" = "max",
 ): Promise<TotalStats | null> {
   try {
@@ -76,7 +81,7 @@ export async function getWalletStats(
     const response = await fetch(url, {
       headers: {
         accept: "application/json",
-        "X-API-KEY": CIELO_API_KEY!,
+        "X-API-KEY": CIELO_API_KEY,
       },
     });
 
@@ -119,7 +124,7 @@ export async function getTokenPnL(
     const response = await fetch(url, {
       headers: {
         accept: "application/json",
-        "X-API-KEY": CIELO_API_KEY!,
+        "X-API-KEY": CIELO_API_KEY,
       },
     });
 
