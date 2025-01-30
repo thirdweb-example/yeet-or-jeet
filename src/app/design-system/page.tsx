@@ -125,9 +125,6 @@ export default function StyleguidePage() {
         <SourcesSection />
         <InputsSection
           tokenInfo={{
-            name: "VVV",
-            tokenIcon:
-              "https://cryptologos.cc/logos/usd-coin-usdc-logo.svg?v=040",
             address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
             priceUSD: "$32.23",
             marketCapUSD: "$62.23m",
@@ -145,9 +142,6 @@ export default function StyleguidePage() {
 
         <InputsSection
           tokenInfo={{
-            name: "VVV",
-            tokenIcon:
-              "https://cryptologos.cc/logos/usd-coin-usdc-logo.svg?v=040",
             address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
             priceUSD: "$32.23",
             marketCapUSD: "$62.23m",

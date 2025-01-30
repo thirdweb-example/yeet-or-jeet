@@ -212,15 +212,10 @@ function ResponseScreen(props: {
       <div className="animate-in fade-in slide-in-from-bottom-4">
         <InputsSection
           tokenInfo={{
-            name:
-              verdictSection?.tokenInfo?.symbol ||
-              verdictSection?.tokenInfo?.name ||
-              "N/A",
             address: props.tokenAddress,
             priceUSD: verdictSection?.tokenInfo?.price || "0.00",
             marketCapUSD: verdictSection?.tokenInfo?.marketCap || "0",
             volumeUSD: "0",
-            tokenIcon: "",
             chain: props.chain,
           }}
           walletInfo={{
