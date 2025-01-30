@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { defaultSelectedChain, supportedChains } from "../lib/supportedChains";
 import { LoadingSpinner } from "../components/blocks/Loading";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { InputsSection } from "../components/blocks/InputsSection";
 import { SourcesSection } from "../components/blocks/SourcesSection";
 import { TradeSummarySection } from "../components/blocks/TradeSummarySection/TradeSummarySection";
@@ -153,6 +153,8 @@ function ResponseScreen(props: {
   walletAddress: string;
   onBack: () => void;
 }) {
+  const [showSources, setShowSources] = useState(false);
+
   const analysisQuery = useQuery({
     queryKey: [
       "response",
@@ -178,116 +180,125 @@ function ResponseScreen(props: {
     retry: false,
   });
 
-  if (analysisQuery.isError) {
-    console.error(analysisQuery.error);
-  }
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSources(true), 6600);
+    return () => clearTimeout(timer);
+  }, []);
 
-  if (analysisQuery.data) {
-    const inputSection = analysisQuery.data.sections.find(
-      (s) => s.section === "inputs",
-    );
-    const verdictSection = analysisQuery.data.sections.find(
-      (s) => s.section === "verdict",
-    );
-    const detailsSection = analysisQuery.data.sections.find(
-      (s) => s.section === "details",
-    );
-
-    return (
-      <main className="container max-w-6xl mx-auto py-8 px-4 space-y-8">
-        <button
-          onClick={props.onBack}
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ChevronLeft className="size-4" />
-          <span>Back</span>
-        </button>
-
-        {inputSection && (
-          <InputsSection
-            tokenInfo={{
-              name:
-                verdictSection?.tokenInfo?.symbol ||
-                verdictSection?.tokenInfo?.name ||
-                "N/A", // TODO: Get from chain
-              address: props.tokenAddress,
-              priceUSD: verdictSection?.tokenInfo?.price || "0.00",
-              marketCapUSD: verdictSection?.tokenInfo?.marketCap || "0",
-              volumeUSD: "0",
-              tokenIcon: "", // TODO: Get token icon
-              chain: props.chain,
-            }}
-            walletInfo={{
-              name: "Wallet",
-              address: props.walletAddress,
-              balanceUSD: "0",
-              winRate: "0%",
-              realizedPnL: "0",
-              ensImage: "",
-              chain: props.chain,
-            }}
-          />
-        )}
-
-        {/* Sources Section */}
-        <SourcesSection />
-
-        {/* Results Section */}
-        {verdictSection && (
-          <TradeSummarySection
-            variant={verdictSection.type!}
-            title={verdictSection.title!}
-            description={verdictSection.description!}
-            actions={[]}
-          />
-        )}
-
-        {/* Details Section */}
-        {detailsSection && (
-          <div className="space-y-6">
-            <div className="space-y-4 columns-2">
-              <MarkdownRenderer markdownText={detailsSection.content || ""} />
-            </div>
-          </div>
-        )}
-
-        {/* Actions Section */}
-        {verdictSection?.actions && verdictSection.actions.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-xl font-semibold">Actions</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {verdictSection.actions.map((action, i) => (
-                <div key={i} className="p-4 rounded-lg border">
-                  <div className="flex-1">
-                    <div className="font-medium">{action.label}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {action.description}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {action.recommendedPercentage}% Recommended
-                    </div>
-                    {action.subtext && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {action.subtext}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </main>
-    );
-  }
+  // const inputSection = analysisQuery.data?.sections.find(
+  //   (s) => s.section === "inputs"
+  // );
+  const verdictSection = analysisQuery.data?.sections.find(
+    (s) => s.section === "verdict",
+  );
+  const detailsSection = analysisQuery.data?.sections.find(
+    (s) => s.section === "details",
+  );
 
   return (
-    <div className="grow flex flex-col container max-w-6xl py-10 items-center justify-center">
-      {analysisQuery.isPending && <LoadingSpinner className="size-10" />}
-      {analysisQuery.isError && (
-        <p className="text-red-500">Failed to get response </p>
+    <main className="container max-w-6xl mx-auto py-8 px-4 space-y-4">
+      <button
+        onClick={props.onBack}
+        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ChevronLeft className="size-4" />
+        <span>Back</span>
+      </button>
+
+      <div className="animate-in fade-in slide-in-from-bottom-4">
+        <InputsSection
+          tokenInfo={{
+            name:
+              verdictSection?.tokenInfo?.symbol ||
+              verdictSection?.tokenInfo?.name ||
+              "N/A",
+            address: props.tokenAddress,
+            priceUSD: verdictSection?.tokenInfo?.price || "0.00",
+            marketCapUSD: verdictSection?.tokenInfo?.marketCap || "0",
+            volumeUSD: "0",
+            tokenIcon: "",
+            chain: props.chain,
+          }}
+          walletInfo={{
+            name: undefined,
+            address: props.walletAddress,
+            balanceUSD: "0",
+            winRate: "0%",
+            realizedPnL: "0",
+            ensImage: "",
+            chain: props.chain,
+          }}
+        />
+      </div>
+
+      {showSources && (
+        <div className="animate-in fade-in slide-in-from-bottom-4">
+          <SourcesSection />
+        </div>
       )}
-    </div>
+
+      {analysisQuery.isLoading && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <LoadingSpinner className="size-4" />
+          <span>Analyzing token data...</span>
+        </div>
+      )}
+
+      {analysisQuery.isSuccess && (
+        <>
+          {verdictSection && (
+            <div className="animate-in fade-in slide-in-from-bottom-4">
+              <TradeSummarySection
+                variant={verdictSection.type!}
+                title={verdictSection.title!}
+                description={verdictSection.description!}
+                actions={[]}
+              />
+            </div>
+          )}
+
+          {detailsSection && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+              <div className="space-y-4 columns-2">
+                <MarkdownRenderer markdownText={detailsSection.content || ""} />
+              </div>
+            </div>
+          )}
+
+          {verdictSection?.actions && verdictSection.actions.length > 0 && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+              <h3 className="text-xl font-semibold">Actions</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {verdictSection.actions.map((action, i) => (
+                  <div key={i} className="p-4 rounded-lg border">
+                    <div className="flex-1">
+                      <div className="font-medium">{action.label}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {action.description}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {action.recommendedPercentage}% Recommended
+                      </div>
+                      {action.subtext && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {action.subtext}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {analysisQuery.isError && (
+        <div className="text-red-500">
+          Error loading data: {analysisQuery.error.message}
+        </div>
+      )}
+    </main>
   );
 }
 

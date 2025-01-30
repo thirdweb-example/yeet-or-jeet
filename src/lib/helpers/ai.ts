@@ -364,8 +364,8 @@ You must respond with a JSON object using this exact structure:
     {
       "section": "verdict",
       "type": "buy" | "sell" | "hold",
-      "title": "string", // e.g. "Yeet $3.2k into VVV"
-      "description": "string", // e.g. "Buy ~$3.2k at $62.3m MC"
+      "title": "string", // e.g. "Yeet $3.2k into VVV", be specific with your amount if possible and make sure if it's a sell it's less than the user has. Max 24 chars
+      "description": "string", // e.g. "Buy ~$3.2k at $62.3m MC", a more straightforward and informed way to say the same thing as title. Max 30 chars
       "summary": "string", // e.g. "Yeet (buy) 20% of your portfolio into VVV"
       "actions": [
         {
@@ -384,7 +384,7 @@ You must respond with a JSON object using this exact structure:
     },
     {
       "section": "details",
-      "content": "string" // Detailed analysis in markdown format including market conditions, technical analysis, and risk factors. This should include a ton of stuff from above and previous data you've pulled. Focus on the token itself. Be concise, dense, and note-taking in your structure, no need for complete sentences. You don't need a title for this section.
+      "content": "string" // Detailed analysis in markdown format including market conditions, technical analysis, and risk factors. This should include a ton of stuff from above and previous data you've pulled. Focus on the token itself. Be concise, dense, and note-taking in your structure, no need for complete sentences. You don't need a title for this section. Use emojis sparcely where appropriate.
     }
   ]
 }

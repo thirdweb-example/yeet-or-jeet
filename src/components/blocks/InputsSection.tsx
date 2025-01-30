@@ -199,7 +199,8 @@ export function InputsSection(props: {
 }) {
   return (
     <section>
-      <div>
+      <h3 className="text-lg font-semibold tracking-tight mb-3">Inputs</h3>
+      <div className="flex flex-col ">
         <div className="flex flex-col lg:flex-row gap-4 lg:[&>*]:min-w-[400px]">
           <TokenInfoCard {...props.tokenInfo} />
           <WalletInfoCard {...props.walletInfo} />

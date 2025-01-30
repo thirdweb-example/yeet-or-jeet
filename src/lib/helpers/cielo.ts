@@ -65,7 +65,13 @@ export async function getWalletStats(
     });
 
     const url = `${CIELO_API_BASE}/${walletAddress}/pnl/total-stats?${params}`;
-    console.log("Fetching wallet stats:", url);
+    console.log("Attempting to fetch wallet stats with:", {
+      url,
+      apiKey: CIELO_API_KEY ? "Present" : "Missing",
+      walletAddress,
+      chain,
+      timeframe,
+    });
 
     const response = await fetch(url, {
       headers: {
@@ -75,11 +81,12 @@ export async function getWalletStats(
     });
 
     if (!response.ok) {
+      const errorResponse = await response.text();
       console.error("Failed to fetch wallet stats:", {
         status: response.status,
         statusText: response.statusText,
         url,
-        responseText: await response.text(),
+        errorResponse,
       });
       return null;
     }
