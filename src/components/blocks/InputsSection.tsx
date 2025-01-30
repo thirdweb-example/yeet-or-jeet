@@ -110,7 +110,8 @@ export function WalletInfoCard(props: WalletInfo) {
 
   const displayName = (
     <AccountName
-      fallbackComponent={<span> {shortenAddress(props.address)} </span>}
+      fallbackComponent={<span>{shortenAddress(props.address)}</span>}
+      loadingComponent={<Skeleton className="h-4 w-[100px]" />}
     />
   );
 
