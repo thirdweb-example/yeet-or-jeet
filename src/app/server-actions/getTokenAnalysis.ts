@@ -68,10 +68,21 @@ export async function getTokenAnalysis(params: {
   }
 
   const initialQuestion = `
-    You are a financial analyst. You are given the following information about a token:
-      ${JSON.stringify(info)}
-    My wallet address is ${params.walletAddress}.
-    Should I buy or sell this token?
+    You are a financial analyst with access to on-chain data. Analyze this token and the user's wallet:
+    
+    Token Data:
+    ${JSON.stringify(info)}
+    
+    Wallet Address: ${params.walletAddress}
+    
+    Please analyze:
+    1. The user's current position and trading history with this token
+    2. The token's on-chain metrics and smart contract
+    3. Recent whale movements and significant transactions
+    4. Any red flags or security concerns
+    
+    Based on the user's current position (if any), should they buy more, hold, or sell? 
+    If they don't have a position, is this a good entry point?
   `;
   const questions = await formatQuestionsWithClaude(initialQuestion);
 

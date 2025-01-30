@@ -63,14 +63,15 @@ Return a JSON object with two fields, keeping the questions concise and focused:
   "perplexityQuestion": "general knowledge question"
 }
 
-Keep each question under 400 characters and focused on the core query.
+Keep each question between 200-1000 characters and focused on the core query.
 
 Notes for Nebula:
 - Ask as much as possible about the contract, holders, transactions, etc.
 - Use specific terms like "address", "block", "transaction", etc.
+- Make sure to ask about the user's wallet and if they hold the token in question.
 
 Notes for Perplexity:
-- Ask for testimonials from notable figures and quote them.
+- Ask for testimonials from notable figures and quote them. What are influencers, KOLs, and thought leaders saying about it if anything? Search X, Reddit, etc.
 - Have it skip stuff that's obvious to focus on important alpha information.
 - How has this traded since it's launch until now?
 - What does it actually do or represent?
@@ -273,20 +274,48 @@ Wallet Performance:
 
   let tokenContext = "";
   if (tokenPnL) {
+    const hasPosition = tokenPnL.total_buy_usd > tokenPnL.total_sell_usd;
+    const currentPosition = tokenPnL.total_buy_usd - tokenPnL.total_sell_usd;
     tokenContext = `
 Token-Specific Performance:
+- Current Position: ${hasPosition ? `ACTIVE - $${currentPosition.toFixed(2)}` : "NO POSITION"}
 - Number of trades: ${tokenPnL.num_swaps}
 - Total bought: $${tokenPnL.total_buy_usd.toFixed(2)}
 - Total sold: $${tokenPnL.total_sell_usd.toFixed(2)}
 - Token PnL: $${tokenPnL.total_pnl_usd.toFixed(2)} (${tokenPnL.roi_percentage.toFixed(2)}% ROI)
 - Average buy price: $${tokenPnL.average_buy_price.toFixed(6)}
 - Average sell price: $${tokenPnL.average_sell_price.toFixed(6)}
+- First trade: ${new Date(tokenPnL.first_trade * 1000).toLocaleDateString()}
+- Last trade: ${new Date(tokenPnL.last_trade * 1000).toLocaleDateString()}
+- Is Honeypot: ${tokenPnL.is_honeypot ? "⚠️ YES" : "No"}
 `;
   }
 
   const userContext = `${walletContext}\n${tokenContext}`.trim();
 
-  const claudeSystemPrompt = `You are YeetorJeet's lead analyst focused on making immediate Yeet (buy), Jeet (sell), or Hodl (hold) decisions. Analyze the data and provide a decisive recommendation formatted in our standard JSON structure. Your analysis should be specific to the token provided.
+  const claudeSystemPrompt = `You are YeetorJeet's lead analyst focused on making immediate Yeet (buy), Jeet (sell), or Hodl (hold) decisions. Your primary goal is to provide personalized recommendations based on the user's current position and trading history with this token.
+
+IMPORTANT - User's Current Position:
+${tokenContext || "No position data available"}
+
+${walletContext ? `Overall Trading Performance:\n${walletContext}` : ""}
+
+Analysis Requirements:
+1. User's Position and History (HIGHEST PRIORITY)
+   - If user holds a position, evaluate whether to hold/add or take profits
+   - If no position, evaluate if this is a good entry point
+   - Consider user's trading history with this token
+2. Price momentum and volatility
+3. On-chain activity and whale movements
+4. Market sentiment and news impact
+5. Risk factors and potential catalysts
+6. Suggested position size (% of portfolio)
+
+Remember:
+- If user has a position, focus on whether to hold/add or take profits
+- If user has no position, focus on whether this is a good entry point
+- Always consider the user's trading history with this token
+- Be specific about position sizes relative to their current holdings
 
 Available Data:
 ${
@@ -363,8 +392,12 @@ You must respond with a JSON object using this exact structure:
     },
     {
       "section": "verdict",
-      "type": "buy" | "sell" | "hold",
-      "title": "string", // e.g. "Yeet $3.2k into VVV", be specific with your amount if possible and make sure if it's a sell it's less than the user has. Max 24 chars
+      "type": ${
+        tokenPnL && tokenPnL.total_buy_usd > tokenPnL.total_sell_usd
+          ? '"buy" | "sell" | "hold"'
+          : '"buy" | "hold"'
+      }, // Only suggest sell if user has a position
+      "title": "string", // e.g. "Yeet $3.2k into VVV", be specific with your amount if possible and make sure if it's a sell it's less than the user has. Can also be in a hold/sell position "Don't buy VVV". Max 24 chars
       "description": "string", // e.g. "Buy ~$3.2k at $62.3m MC", a more straightforward and informed way to say the same thing as title. Max 30 chars
       "summary": "string", // e.g. "Yeet (buy) 20% of your portfolio into VVV"
       "actions": [
@@ -384,7 +417,7 @@ You must respond with a JSON object using this exact structure:
     },
     {
       "section": "details",
-      "content": "string" // Detailed analysis in markdown format including market conditions, technical analysis, and risk factors. This should include a ton of stuff from above and previous data you've pulled. Focus on the token itself. Be concise, dense, and note-taking in your structure, no need for complete sentences. You don't need a title for this section. Use emojis sparcely where appropriate. Make sure to space out so that it becomes multiple sections.
+      "content": "string" // Detailed analysis in markdown format including market conditions, technical analysis, and risk factors. This should include a ton of stuff from above and previous data you've pulled. Focus on the token itself. You don't need a title for this section. Use emojis sparcely where appropriate. Make sure to space out your markdown so that it becomes multiple sections and comes out clean in markdown. Mention quotes if relevant. Be concise, dense, and note-taking in your structure, no need for complete sentences. Between 600-3000 characters. 
     }
   ]
 }

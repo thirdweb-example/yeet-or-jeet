@@ -256,7 +256,7 @@ function ResponseScreen(props: {
 
           {detailsSection && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-              <div className="space-y-4 columns-2">
+              <div className="space-y-4 columns-1 md:columns-2">
                 <MarkdownRenderer markdownText={detailsSection.content || ""} />
               </div>
             </div>
