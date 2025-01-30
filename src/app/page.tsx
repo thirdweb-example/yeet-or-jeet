@@ -52,9 +52,9 @@ type Action = {
 
 type Section = {
   section: "inputs" | "verdict" | "details";
-  type?: "buy" | "sell" | "hold";
-  title?: string;
-  description?: string;
+  type: "buy" | "sell" | "hold";
+  title: string;
+  description: string;
   summary?: string;
   actions?: Action[];
   content?: string;
@@ -178,6 +178,8 @@ function ResponseScreen(props: {
       return res.data as TokenAnalysis;
     },
     retry: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
@@ -197,13 +199,15 @@ function ResponseScreen(props: {
 
   return (
     <main className="container max-w-6xl mx-auto py-8 px-4 space-y-4">
-      <button
+      <Button
         onClick={props.onBack}
-        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        variant="ghost"
+        className="gap-2 -translate-x-3 pl-2 pr-4 text-muted-foreground hover:text-foreground"
+        size="sm"
       >
         <ChevronLeft className="size-4" />
-        <span>Back</span>
-      </button>
+        Back
+      </Button>
 
       <div className="animate-in fade-in slide-in-from-bottom-4">
         <InputsSection
@@ -249,9 +253,9 @@ function ResponseScreen(props: {
           {verdictSection && (
             <div className="animate-in fade-in slide-in-from-bottom-4">
               <TradeSummarySection
-                variant={verdictSection.type!}
-                title={verdictSection.title!}
-                description={verdictSection.description!}
+                variant={verdictSection.type}
+                title={verdictSection.title}
+                description={verdictSection.description}
                 actions={[]}
               />
             </div>
@@ -269,8 +273,8 @@ function ResponseScreen(props: {
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
               <h3 className="text-xl font-semibold">Actions</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {verdictSection.actions.map((action, i) => (
-                  <div key={i} className="p-4 rounded-lg border">
+                {verdictSection.actions.map((action) => (
+                  <div key={action.label} className="p-4 rounded-lg border">
                     <div className="flex-1">
                       <div className="font-medium">{action.label}</div>
                       <div className="text-sm text-muted-foreground">
