@@ -5,6 +5,7 @@ import { ThirdwebProvider } from "thirdweb/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AutoConnect } from "thirdweb/react";
 import { thirdwebClient } from "../../lib/thirdweb-client";
+import { IdbPersistProvider } from "./idb-persister";
 
 const queryClient = new QueryClient();
 
@@ -23,7 +24,7 @@ export function Providers(props: {
         themes={["light", "dark"]}
       >
         <QueryClientProvider client={queryClient}>
-          {props.children}
+          <IdbPersistProvider>{props.children}</IdbPersistProvider>
         </QueryClientProvider>
       </ThemeProvider>
     </ThirdwebProvider>
