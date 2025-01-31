@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { defaultSelectedChain, supportedChains } from "../lib/supportedChains";
 import { LoadingSpinner } from "../components/blocks/Loading";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { InputsSection } from "../components/blocks/InputsSection";
 import { SourcesSection } from "../components/blocks/SourcesSection";
 import { TradeSummarySection } from "../components/blocks/TradeSummarySection/TradeSummarySection";
@@ -180,6 +180,33 @@ function ResponseScreen(props: {
     refetchOnWindowFocus: false,
   });
 
+  const [loadingMessage, setLoadingMessage] = useState(
+    "Initializing token analysis...",
+  );
+
+  useEffect(() => {
+    const messages = [
+      "Initializing token analysis... (1-2 minutes total)",
+      "Formatting specialized AI queries... (1-2 minutes total)",
+      "Establishing secure Nebula session... (1-2 minutes total)",
+      "Gathering on-chain token data... (1-2 minutes total)",
+      "Analyzing blockchain metrics and wallet interactions... (1-2 minutes total)",
+      "Querying market sentiment and community insights... (1-2 minutes total)",
+      "Processing token history and trading patterns... (1-2 minutes total)",
+      "Evaluating smart contract interactions... (1-2 minutes total)",
+      "Synthesizing AI responses... (1-2 minutes total)",
+      "Preparing comprehensive analysis... (1-2 minutes total)",
+    ];
+    let currentIndex = 0;
+
+    const interval = setInterval(() => {
+      currentIndex = (currentIndex + 1) % messages.length;
+      setLoadingMessage(messages[currentIndex]);
+    }, 7000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // const inputSection = analysisQuery.data?.sections.find(
   //   (s) => s.section === "inputs"
   // );
@@ -226,7 +253,7 @@ function ResponseScreen(props: {
       {analysisQuery.isLoading && (
         <div className="flex items-center gap-2 text-muted-foreground">
           <LoadingSpinner className="size-4" />
-          <span>Analyzing token data...</span>
+          <span>{loadingMessage}</span>
         </div>
       )}
 

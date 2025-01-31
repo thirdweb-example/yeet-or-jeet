@@ -417,17 +417,17 @@ You must respond with a JSON object using this exact structure:
     },
     {
       "section": "details",
-      "content": "string" // Detailed analysis in markdown format including market conditions, technical analysis, and risk factors. This should include a ton of stuff from above and previous data you've pulled. Focus on the token itself. You don't need a title for this section. Use emojis sparcely where appropriate. Make sure to space out your markdown so that it becomes multiple sections and comes out clean in markdown. Mention quotes if relevant. Be concise, dense, and note-taking in your structure, no need for complete sentences. Between 600-3000 characters. 
+      "content": "string" // Detailed analysis in markdown format including market conditions, technical analysis, and risk factors. This should include a ton of stuff from above and previous data you've pulled. Focus on the token itself. You don't need a title for this section. Use emojis sparcely where appropriate. Make sure to space out your markdown so that it becomes multiple sections and comes out clean in markdown. Mention quotes if relevant. Be concise, dense, and note-taking in your structure, no need for complete sentences. Between 1000-3000 characters. 
     }
   ]
 }
 
 Make sure to:
 1. Use actual values from the provided data where available
-2. Format the details section in proper markdown
+2. Format the details section in proper markdown, with spacing and line breaks correctly so it comes out correctly when inputted into a markdown renderer
 3. Include specific transaction data in the actions
 4. Be decisive in the verdict section
-5. Provide clear reasoning in the details section
+5. Provide clear reasoning in the details section, contextualize it to other tokens the user has traded
 6. Focus on insights, things a trader wouldn't already know, specific to the token and current market conditions
 7. Use accurate values and proper JSON format`;
 
