@@ -34,6 +34,7 @@ import { SourcesSection } from "../components/blocks/SourcesSection";
 import { TradeSummarySection } from "../components/blocks/TradeSummarySection/TradeSummarySection";
 import { MarkdownRenderer } from "../components/blocks/markdown-renderer";
 import { ChevronLeft } from "lucide-react";
+import { UniswapWidget } from "../components/blocks/UniswapWidget";
 
 type NebulaTxData = {
   chainId: number;
@@ -286,6 +287,27 @@ function ResponseScreen(props: {
                 ))}
               </div>
             </div>
+          )}
+
+          {verdictSection?.type === "buy" || verdictSection?.type === "sell" ? (
+            <UniswapWidget
+              chainId={props.chain.id}
+              toTokenAddress={
+                verdictSection.type === "sell" ? props.tokenAddress : undefined
+              }
+              fromTokenAddress={
+                verdictSection.type === "buy" ? props.tokenAddress : undefined
+              }
+              className="my-10"
+            />
+          ) : (
+            // If AI doesn't have a clear verdict, show the default Uniswap widget
+            <UniswapWidget
+              chainId={props.chain.id}
+              toTokenAddress={undefined}
+              fromTokenAddress={undefined}
+              className="my-10"
+            />
           )}
         </>
       )}

@@ -214,6 +214,15 @@ export default function StyleguidePage() {
       <UniswapWidget
         chainId={base.id}
         toTokenAddress="0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+        fromTokenAddress={undefined}
+        className="my-10"
+      />
+
+      <UniswapWidget
+        chainId={base.id}
+        toTokenAddress={undefined}
+        fromTokenAddress={"0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"}
+        className="my-10"
       />
     </div>
   );

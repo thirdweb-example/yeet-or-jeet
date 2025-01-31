@@ -3,6 +3,7 @@
 import { useTheme } from "next-themes";
 import { ClientOnly } from "./ClientOnly/ClientOnly";
 import { Skeleton } from "../ui/skeleton";
+import { cn } from "../../lib/utils";
 
 const uniswapChainMap = {
   1: "ethereum",
@@ -11,7 +12,9 @@ const uniswapChainMap = {
 
 type UniswapWidgetProps = {
   chainId: number;
-  toTokenAddress: string;
+  toTokenAddress: string | undefined;
+  fromTokenAddress: string | undefined;
+  className?: string;
 };
 
 export function UniswapWidgetInner(props: UniswapWidgetProps) {
@@ -25,12 +28,29 @@ export function UniswapWidgetInner(props: UniswapWidgetProps) {
 
   const chainId = props.chainId as keyof typeof uniswapChainMap;
 
+  const queryParams = new URLSearchParams({
+    theme,
+    chain: uniswapChainMap[chainId],
+    exactField: "input",
+  });
+
+  if (props.toTokenAddress) {
+    queryParams.set("outputCurrency", props.toTokenAddress);
+  }
+
+  if (props.fromTokenAddress) {
+    queryParams.set("inputCurrency", props.fromTokenAddress);
+  }
+
   return (
     <iframe
       title="Uniswap"
-      src={`https://app.uniswap.org/#/swap?theme=${theme}&chain=${uniswapChainMap[chainId]}&exactField=input&outputCurrency=${props.toTokenAddress}`}
+      src={`https://app.uniswap.org/#/swap?${queryParams.toString()}`}
       height="660px"
-      className="rounded-lg w-full lg:max-w-[450px] mx-auto border-none block shadow border"
+      className={cn(
+        "rounded-lg w-full lg:max-w-[450px] mx-auto block border overflow-hidden",
+        props.className,
+      )}
     />
   );
 }
