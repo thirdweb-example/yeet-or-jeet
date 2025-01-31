@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { defaultSelectedChain, supportedChains } from "../lib/supportedChains";
 import { LoadingSpinner } from "../components/blocks/Loading";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { InputsSection } from "../components/blocks/InputsSection";
 import { SourcesSection } from "../components/blocks/SourcesSection";
 import { TradeSummarySection } from "../components/blocks/TradeSummarySection/TradeSummarySection";
@@ -154,8 +154,6 @@ function ResponseScreen(props: {
   walletAddress: string;
   onBack: () => void;
 }) {
-  const [showSources, setShowSources] = useState(false);
-
   const analysisQuery = useQuery({
     queryKey: [
       "response",
@@ -182,11 +180,6 @@ function ResponseScreen(props: {
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowSources(true), 6600);
-    return () => clearTimeout(timer);
-  }, []);
 
   // const inputSection = analysisQuery.data?.sections.find(
   //   (s) => s.section === "inputs"
@@ -229,11 +222,7 @@ function ResponseScreen(props: {
         />
       </div>
 
-      {showSources && (
-        <div className="animate-in fade-in slide-in-from-bottom-4">
-          <SourcesSection />
-        </div>
-      )}
+      <SourcesSection />
 
       {analysisQuery.isLoading && (
         <div className="flex items-center gap-2 text-muted-foreground">
