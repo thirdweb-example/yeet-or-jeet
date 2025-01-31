@@ -191,7 +191,7 @@ function ResponseScreen(props: {
   );
 
   return (
-    <main className="container max-w-6xl mx-auto py-8 px-4 space-y-4">
+    <main className="container max-w-6xl mx-auto py-8 px-4 space-y-8">
       <Button
         onClick={props.onBack}
         variant="ghost"
@@ -219,7 +219,9 @@ function ResponseScreen(props: {
         />
       </div>
 
-      <SourcesSection />
+      <div className="animate-in fade-in slide-in-from-bottom-4">
+        <SourcesSection />
+      </div>
 
       {analysisQuery.isLoading && (
         <div className="flex items-center gap-2 text-muted-foreground">
