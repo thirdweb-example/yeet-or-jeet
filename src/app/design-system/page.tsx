@@ -7,7 +7,6 @@ import { Loading } from "../../components/blocks/Loading";
 import { base } from "thirdweb/chains";
 import { TradeSummarySection } from "../../components/blocks/TradeSummarySection/TradeSummarySection";
 import { MarkdownRenderer } from "../../components/blocks/markdown-renderer";
-import { UniswapWidget } from "../../components/blocks/UniswapWidget";
 
 const markdownExample = `\
 # Heading 1
@@ -158,68 +157,28 @@ export default function StyleguidePage() {
           variant="sell"
           title="Jeet 20% of your VVV"
           description="Sell $500 at 24.32% profit"
-          actions={[
-            {
-              label: "FULL",
-              txData: {
-                chainId: 8453,
-                to: "0x83Dd93fA5D8343094f850f90B3fb90088C1bB425",
-                data: "0x",
-                value: "0x16345785d8a0000",
-              },
-            },
-            {
-              label: "HALF",
-              txData: {
-                chainId: 8453,
-                to: "0x83Dd93fA5D8343094f850f90B3fb90088C1bB425",
-                data: "0x",
-                value: "0x16345785d8a0000",
-              },
-            },
-          ]}
+          tokenAddress="0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf"
+          chainId={8453}
         />
 
         <TradeSummarySection
           variant="buy"
           title="Yeet $3.2k into VVV"
           description="Buy ~$3.2k at $62.3m MC"
-          actions={[
-            {
-              label: "Trade",
-              txData: {
-                chainId: 8453,
-                to: "0x83Dd93fA5D8343094f850f90B3fb90088C1bB425",
-                data: "0x",
-                value: "0x16345785d8a0000",
-              },
-            },
-          ]}
+          tokenAddress="0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf"
+          chainId={8453}
         />
 
         <TradeSummarySection
           variant="hold"
           title="Hodl VVV"
           description="Don't change anything"
-          actions={[]}
+          tokenAddress="0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf"
+          chainId={8453}
         />
 
         <MarkdownRenderer markdownText={markdownExample} skipHtml={true} />
       </div>
-
-      <UniswapWidget
-        chainId={base.id}
-        toTokenAddress="0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
-        fromTokenAddress={undefined}
-        className="my-10"
-      />
-
-      <UniswapWidget
-        chainId={base.id}
-        toTokenAddress={undefined}
-        fromTokenAddress={"0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"}
-        className="my-10"
-      />
     </div>
   );
 }

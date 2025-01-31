@@ -1,9 +1,9 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { ClientOnly } from "./ClientOnly/ClientOnly";
-import { Skeleton } from "../ui/skeleton";
 import { cn } from "../../lib/utils";
+import { LoadingSpinner } from "./Loading";
+import { useState } from "react";
 
 const uniswapChainMap = {
   1: "ethereum",
@@ -17,9 +17,10 @@ type UniswapWidgetProps = {
   className?: string;
 };
 
-export function UniswapWidgetInner(props: UniswapWidgetProps) {
+export function UniswapWidget(props: UniswapWidgetProps) {
   const { theme: _theme } = useTheme();
   const theme = _theme === "dark" ? "dark" : "light";
+  const [isLoaded, setIsLoaded] = useState(false);
 
   if (!(props.chainId in uniswapChainMap)) {
     console.error(`UniswapWidget: Unsupported chainId ${props.chainId}`);
@@ -43,23 +44,33 @@ export function UniswapWidgetInner(props: UniswapWidgetProps) {
   }
 
   return (
-    <iframe
-      title="Uniswap"
-      src={`https://app.uniswap.org/#/swap?${queryParams.toString()}`}
-      className={cn(
-        "rounded-lg w-full sm:max-w-[450px] h-[600px] mx-auto block border overflow-hidden",
-        props.className,
-      )}
-    />
+    <div className="relative">
+      {!isLoaded && <LoadingIframe className="absolute inset-0" />}
+      <iframe
+        onLoad={() => setIsLoaded(true)}
+        title="Uniswap"
+        src={`https://app.uniswap.org/#/swap?${queryParams.toString()}`}
+        className={cn(
+          "w-full h-[600px] block overflow-hidden border-none",
+          props.className,
+          !isLoaded && "invisible",
+        )}
+      />
+    </div>
   );
 }
 
-export function UniswapWidget(props: UniswapWidgetProps) {
+function LoadingIframe(props: {
+  className?: string;
+}) {
   return (
-    <ClientOnly
-      ssr={<Skeleton className="h-[600px] w-full sm:max-w-[450px] mx-auto" />}
+    <div
+      className={cn(
+        "h-[600px] w-full flex items-center justify-center",
+        props.className,
+      )}
     >
-      <UniswapWidgetInner {...props} />
-    </ClientOnly>
+      <LoadingSpinner className="size-10" />
+    </div>
   );
 }
