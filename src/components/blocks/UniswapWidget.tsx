@@ -46,9 +46,8 @@ export function UniswapWidgetInner(props: UniswapWidgetProps) {
     <iframe
       title="Uniswap"
       src={`https://app.uniswap.org/#/swap?${queryParams.toString()}`}
-      height="660px"
       className={cn(
-        "rounded-lg w-full lg:max-w-[450px] mx-auto block border overflow-hidden",
+        "rounded-lg w-full sm:max-w-[450px] h-[600px] mx-auto block border overflow-hidden",
         props.className,
       )}
     />
@@ -58,7 +57,7 @@ export function UniswapWidgetInner(props: UniswapWidgetProps) {
 export function UniswapWidget(props: UniswapWidgetProps) {
   return (
     <ClientOnly
-      ssr={<Skeleton className="h-[660px] w-full lg:max-w-[450px] mx-auto" />}
+      ssr={<Skeleton className="h-[600px] w-full sm:max-w-[450px] mx-auto" />}
     >
       <UniswapWidgetInner {...props} />
     </ClientOnly>

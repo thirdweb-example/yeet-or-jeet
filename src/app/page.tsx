@@ -215,8 +215,6 @@ function ResponseScreen(props: {
           walletInfo={{
             address: props.walletAddress,
             balanceUSD: "0",
-            winRate: "0%",
-            realizedPnL: "0",
             chain: props.chain,
           }}
         />

@@ -25,8 +25,6 @@ type TokenInfo = {
 type WalletInfo = {
   address: string;
   balanceUSD: string;
-  winRate: string;
-  realizedPnL: string;
   chain: Chain;
 };
 
@@ -174,26 +172,30 @@ export function WalletInfoCard(props: WalletInfo) {
 
           {/* Row 2 */}
           <div className="gap-3 flex items-center text-xs text-muted-foreground">
-            <p>
+            <div className="flex items-center gap-2">
               Win rate:{" "}
-              {walletStatsQuery.data
-                ? `${walletStatsQuery.data.winrate}%`
-                : props.winRate}
-            </p>
-            <p>
+              {walletStatsQuery.data ? (
+                `${walletStatsQuery.data.winrate}%`
+              ) : (
+                <Skeleton className="h-3 w-10 inline-block" />
+              )}
+            </div>
+            <div className="flex items-center gap-2">
               P&L:{" "}
-              {walletStatsQuery.data
-                ? `${walletStatsQuery.data.combined_pnl_usd.toLocaleString(
-                    "en-US",
-                    {
-                      style: "currency",
-                      currency: "USD",
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    },
-                  )}`
-                : props.realizedPnL}
-            </p>
+              {walletStatsQuery.data ? (
+                `${walletStatsQuery.data.combined_pnl_usd.toLocaleString(
+                  "en-US",
+                  {
+                    style: "currency",
+                    currency: "USD",
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  },
+                )}`
+              ) : (
+                <Skeleton className="h-3 w-10 inline-block" />
+              )}
+            </div>
           </div>
         </div>
       </div>

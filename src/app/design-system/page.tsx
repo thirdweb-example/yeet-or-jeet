@@ -136,8 +136,6 @@ export default function StyleguidePage() {
             address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
             balanceUSD: "$32.2k",
             chain: base,
-            realizedPnL: "$25.3k (25.3%)",
-            winRate: "34%",
           }}
         />
 
@@ -153,8 +151,6 @@ export default function StyleguidePage() {
             address: "0x1F846F6DAE38E1C88D71EAA191760B15f38B7A37",
             balanceUSD: "$32.2k",
             chain: base,
-            realizedPnL: "$25.3k (25.3%)",
-            winRate: "34%",
           }}
         />
 
