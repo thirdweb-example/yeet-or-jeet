@@ -1,74 +1,46 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  defaultChainId,
-  defaultChainNameUniswap,
-  defaultNetwork,
-  defaultToken,
-  getTokenInfo,
-  getTokenInfoForPool,
-} from "@/lib/geckoterminal";
-import { useState } from "react";
-import { Input } from "../ui/input";
-import { Button } from "../ui/button";
+"use client";
 
-// TODO - add proper typescript types
+import { useTheme } from "next-themes";
+import { ClientOnly } from "./ClientOnly/ClientOnly";
+import { Skeleton } from "../ui/skeleton";
 
-const Uniswap = ({ poolInfo }: { poolInfo: any }) => {
-  const fromToken = poolInfo?.data?.[0]?.attributes?.address;
-  const toToken = poolInfo?.data?.[1]?.attributes?.address;
+const uniswapChainMap = {
+  1: "ethereum",
+  8453: "base",
+} as const;
 
-  if (!poolInfo) return <></>;
+type UniswapWidgetProps = {
+  chainId: number;
+  toTokenAddress: string;
+};
+
+export function UniswapWidgetInner(props: UniswapWidgetProps) {
+  const { theme: _theme } = useTheme();
+  const theme = _theme === "dark" ? "dark" : "light";
+
+  if (!(props.chainId in uniswapChainMap)) {
+    console.error(`UniswapWidget: Unsupported chainId ${props.chainId}`);
+    return null;
+  }
+
+  const chainId = props.chainId as keyof typeof uniswapChainMap;
+
   return (
     <iframe
-      src={`https://app.uniswap.org/#/swap?theme=dark&chain=${defaultChainNameUniswap}&exactField=input&exactAmount=1&inputCurrency=${fromToken}&outputCurrency=${toToken}`}
+      title="Uniswap"
+      src={`https://app.uniswap.org/#/swap?theme=${theme}&chain=${uniswapChainMap[chainId]}&exactField=input&outputCurrency=${props.toTokenAddress}`}
       height="660px"
-      width="330px"
-      style={{
-        border: 0,
-        margin: "0 auto",
-        marginBottom: "0.5rem",
-        display: "block",
-        borderRadius: "10px",
-        minWidth: "300px",
-      }}
+      className="rounded-lg w-full lg:max-w-[450px] mx-auto border-none block shadow border"
     />
   );
-};
+}
 
-export const UniswapWidget = () => {
-  const [tokenInfo, setTokenInfo] = useState<object>();
-  const [poolInfo, setPoolInfo] = useState();
-  const [tokenAddress, setTokenAddress] = useState<string>();
-
-  const getTokenDetails = async () => {
-    try {
-      if (!tokenAddress) return alert("Invalid token address");
-
-      const tokenInfo = await getTokenInfo(defaultNetwork, tokenAddress);
-      setTokenInfo(tokenInfo);
-
-      // selecting first pool as its most popular
-      const poolAddress = tokenInfo?.pools?.[0]?.address;
-      if (!poolAddress) return alert("No pool found");
-      getTokenInfoForPool(poolAddress)
-        .then((v) => setPoolInfo(v))
-        .catch(() => alert("Error getting pool"));
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  console.log(tokenInfo);
-
+export function UniswapWidget(props: UniswapWidgetProps) {
   return (
-    <>
-      <Input
-        type="text"
-        defaultValue={defaultToken[defaultChainId]}
-        onChange={(e) => setTokenAddress(e.target.value)}
-      />
-      <Button onClick={getTokenDetails}>Predict Now</Button>
-      <Uniswap poolInfo={poolInfo} />
-    </>
+    <ClientOnly
+      ssr={<Skeleton className="h-[660px] w-full lg:max-w-[450px] mx-auto" />}
+    >
+      <UniswapWidgetInner {...props} />
+    </ClientOnly>
   );
-};
+}

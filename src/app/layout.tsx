@@ -5,6 +5,7 @@ import { CustomizedConnectButton } from "../components/blocks/CustomConnectButto
 import { ThemeToggleButton } from "../components/blocks/toggle-theme";
 import Link from "next/link";
 import { Providers } from "../components/providers/Providers";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-dvh flex flex-col bg-background text-foreground`}
       >
+        <Toaster />
         <Providers>
           <header className="border-b border-border">
             <div className="container max-w-6xl mx-auto flex justify-between items-center py-3 px-4">

@@ -7,6 +7,7 @@ import { Loading } from "../../components/blocks/Loading";
 import { base } from "thirdweb/chains";
 import { TradeSummarySection } from "../../components/blocks/TradeSummarySection/TradeSummarySection";
 import { MarkdownRenderer } from "../../components/blocks/markdown-renderer";
+import { UniswapWidget } from "../../components/blocks/UniswapWidget";
 
 const markdownExample = `\
 # Heading 1
@@ -209,6 +210,11 @@ export default function StyleguidePage() {
 
         <MarkdownRenderer markdownText={markdownExample} skipHtml={true} />
       </div>
+
+      <UniswapWidget
+        chainId={base.id}
+        toTokenAddress="0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+      />
     </div>
   );
 }
