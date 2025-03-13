@@ -85,55 +85,59 @@ export async function getTokenInfo(
     const normalizedAddress = address.toLowerCase();
     console.log(`Normalized address: ${normalizedAddress}`);
 
-    // First try to get token info to verify the token exists
-    const tokenData = await fetchGeckoTerminal(`/networks/${network}/tokens/${normalizedAddress}/info`);
+    // Get token info first
+    const tokenData = await fetchGeckoTerminal(`/networks/${network}/tokens/${normalizedAddress}`);
     
-    if (!tokenData?.data?.attributes) {
+    if (!tokenData?.data) {
       throw new Error(`Token not found on ${network}`);
     }
 
-    // Then get price and pools data
-    const [priceData, poolsData] = await Promise.all([
-      fetchGeckoTerminal(`/simple/networks/${network}/token_price/${normalizedAddress}`),
-      fetchGeckoTerminal(`/networks/${network}/tokens/${normalizedAddress}/pools`),
-    ]);
-
     const tokenInfo: TokenInfo = {
-      price: priceData?.data?.attributes?.token_prices?.[normalizedAddress],
       network,
       address: normalizedAddress,
+      name: tokenData.data.attributes.name,
+      symbol: tokenData.data.attributes.symbol,
+      info: tokenData.data.attributes,
     };
 
-    // Add token data
-    if (tokenData?.data?.attributes) {
-      const attrs = tokenData.data.attributes;
-      tokenInfo.name = attrs.name;
-      tokenInfo.symbol = attrs.symbol;
-      tokenInfo.info = attrs;
+    // Get price data
+    try {
+      const priceData = await fetchGeckoTerminal(`/networks/${network}/tokens/${normalizedAddress}/price`);
+      if (priceData?.data?.attributes?.price_usd) {
+        tokenInfo.price = priceData.data.attributes.price_usd;
+      }
+    } catch (error) {
+      console.warn("Failed to fetch price data:", error);
     }
 
-    // Add pools data
-    if (poolsData?.data) {
-      tokenInfo.pools = poolsData.data.map((pool: any) => ({
-        address: pool.attributes.address,
-        name: pool.attributes.name,
-        volume_24h: pool.attributes.volume_usd_24h,
-        liquidity: pool.attributes.reserve_in_usd,
-        relationships: {
-          baseToken: pool.relationships.base_token.data.id
-            .split("_")[1]
-            .toLowerCase(),
-          quoteToken: pool.relationships.quote_token.data.id
-            .split("_")[1]
-            .toLowerCase(),
-        },
-      }));
+    // Get pools data
+    try {
+      const poolsData = await fetchGeckoTerminal(`/networks/${network}/tokens/${normalizedAddress}/pools`);
+      if (poolsData?.data) {
+        tokenInfo.pools = poolsData.data.map((pool: any) => ({
+          address: pool.attributes.address,
+          name: pool.attributes.name,
+          volume_24h: pool.attributes.volume_usd_24h,
+          liquidity: pool.attributes.reserve_in_usd,
+          relationships: {
+            baseToken: pool.relationships.base_token.data.id
+              .split("_")[1]
+              .toLowerCase(),
+            quoteToken: pool.relationships.quote_token.data.id
+              .split("_")[1]
+              .toLowerCase(),
+          },
+        }));
+      }
+    } catch (error) {
+      console.warn("Failed to fetch pools data:", error);
     }
 
     if (!tokenInfo.name || !tokenInfo.symbol) {
       throw new Error("Token data incomplete");
     }
 
+    console.log("Final token info:", tokenInfo);
     return tokenInfo;
   } catch (error) {
     console.error("Error getting token info:", error);
