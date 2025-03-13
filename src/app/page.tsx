@@ -35,6 +35,7 @@ import { TradeSummarySection } from "../components/blocks/TradeSummarySection/Tr
 import { MarkdownRenderer } from "../components/blocks/markdown-renderer";
 import { ChevronLeft } from "lucide-react";
 import { TopTokensGrid } from "../components/blocks/TopTokensGrid";
+import React from "react";
 
 type NebulaTxData = {
   chainId: number;
@@ -379,12 +380,46 @@ function TokenForm(props: {
   onSubmit: (values: { tokenAddress: string }) => void;
 }) {
   const account = useActiveAccount();
+  const inputRef = React.useRef<HTMLInputElement>(null);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       tokenAddress: "0x" as `0x${string}`,
     },
   });
+
+  // Focus input when mounted
+  React.useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // Listen for clipboard changes
+  React.useEffect(() => {
+    const handleClipboardChange = async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text.startsWith("0x") && isAddress(text)) {
+          form.setValue("tokenAddress", text as `0x${string}`);
+          inputRef.current?.focus();
+        }
+      } catch (err) {
+        // Ignore clipboard read errors
+      }
+    };
+
+    // Create a MutationObserver to watch for changes in the DOM
+    // This helps detect when the user copies an address from the TopTokensGrid
+    const observer = new MutationObserver(() => {
+      handleClipboardChange();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => observer.disconnect();
+  }, [form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     props.onSubmit(values);
@@ -406,6 +441,7 @@ function TokenForm(props: {
                 <Input
                   placeholder="0x123..."
                   {...field}
+                  ref={inputRef}
                   className="w-full bg-card border-input text-foreground placeholder-muted-foreground focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all"
                 />
               </FormControl>
