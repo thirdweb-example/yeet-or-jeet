@@ -141,7 +141,7 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
   const baseUrl = getApiBaseUrl(props.chainId);
 
   // Rate limiting helper
-  const rateLimitedFetch = async (url: string, options: RequestInit = {}) => {
+  const rateLimitedFetch = useCallback(async (url: string, options: RequestInit = {}) => {
     const now = Date.now();
     const timeSinceLastCall = now - lastApiCall;
     
@@ -151,7 +151,7 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
     
     setLastApiCall(Date.now());
     return fetch(url, options);
-  };
+  }, [lastApiCall]);
 
   // Check token allowance with rate limiting
   const checkAllowance = useCallback(async () => {
@@ -183,7 +183,7 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
     } finally {
       setIsCheckingAllowance(false);
     }
-  }, [address, props.fromTokenAddress, amount, baseUrl]);
+  }, [address, props.fromTokenAddress, amount, baseUrl, rateLimitedFetch]);
 
   // Approve token with rate limiting
   const approveToken = async () => {
@@ -265,7 +265,7 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
     } finally {
       setIsRefreshing(false);
     }
-  }, [props.chainId, props.toTokenAddress, props.fromTokenAddress, baseUrl]);
+  }, [props.toTokenAddress, props.fromTokenAddress, baseUrl, rateLimitedFetch]);
 
   // Set up price refresh interval
   useEffect(() => {
@@ -288,7 +288,7 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
   }, [amount, checkAllowance]);
 
   // Fetch swap data with rate limiting
-  const fetchSwapData = async () => {
+  const fetchSwapData = useCallback(async () => {
     if (!amount || !props.fromTokenAddress || !props.toTokenAddress) return;
 
     try {
@@ -320,7 +320,7 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load swap data");
     }
-  };
+  }, [amount, props.fromTokenAddress, props.toTokenAddress, props.chainId, address, rateLimitedFetch, baseUrl]);
 
   const handleSwap = async () => {
     if (!swapData?.tx || !swapData.routerParams) return;
@@ -420,8 +420,8 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
             </div>
           ) : (
             <div className="relative">
-              {!isLoaded && <LoadingIframe className="absolute inset-0" />}
-              <div className={cn("space-y-6", !isLoaded && "invisible")}>
+              {(!isLoaded || isTransactionPending) && <LoadingIframe className="absolute inset-0" />}
+              <div className={cn("space-y-6", (!isLoaded || isTransactionPending) && "invisible")}>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <Button
@@ -450,22 +450,23 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       className="w-full"
+                      disabled={isTransactionPending}
                     />
                     {needsApproval ? (
                       <Button
                         onClick={approveToken}
                         className="w-full"
-                        disabled={!address || isCheckingAllowance}
+                        disabled={!address || isCheckingAllowance || isTransactionPending}
                       >
-                        Approve Token
+                        {isTransactionPending ? "Transaction Pending..." : "Approve Token"}
                       </Button>
                     ) : (
                       <Button 
-                        onClick={handleSwap}
+                        onClick={fetchSwapData}
                         className="w-full"
-                        disabled={!amount || !address || isCheckingAllowance}
+                        disabled={!amount || !address || isCheckingAllowance || isTransactionPending}
                       >
-                        Swap Tokens
+                        {isTransactionPending ? "Transaction Pending..." : "Get Swap Quote"}
                       </Button>
                     )}
                   </div>
