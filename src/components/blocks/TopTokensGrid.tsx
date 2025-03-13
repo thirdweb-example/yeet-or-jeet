@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getTopTokens } from "@/lib/geckoterminal";
+import { getTopTokens, DexScreenerToken } from "@/lib/dexscreener";
 import { TokenIcon, TokenProvider } from "thirdweb/react";
 import { thirdwebClient } from "@/lib/thirdweb-client";
 import { Skeleton } from "../ui/skeleton";
@@ -11,7 +11,8 @@ import {
   CheckIcon,
   TwitterIcon,
   GlobeIcon,
-  MessageCircleIcon
+  MessageCircleIcon,
+  DropletIcon
 } from "lucide-react";
 import { supportedChains } from "@/lib/supportedChains";
 import { useState } from "react";
@@ -28,7 +29,7 @@ export function TopTokensGrid({ onTokenSelect }: { onTokenSelect: (address: stri
   
   const topTokensQuery = useQuery({
     queryKey: ["topTokens"],
-    queryFn: getTopTokens,
+    queryFn: async () => getTopTokens(),
   });
 
   const handleCopy = async (address: string, e: React.MouseEvent) => {
@@ -86,7 +87,7 @@ export function TopTokensGrid({ onTokenSelect }: { onTokenSelect: (address: stri
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {topTokensQuery.data?.map((token) => (
+      {topTokensQuery.data?.map((token: DexScreenerToken) => (
         <TokenProvider
           key={token.address}
           address={token.address}
@@ -145,8 +146,16 @@ export function TopTokensGrid({ onTokenSelect }: { onTokenSelect: (address: stri
                     <span>MC: ${Math.round(token.market_cap_usd).toLocaleString()}</span>
                   </div>
                   
-                  {/* Social links and GT score */}
-                  {(token.twitter_handle || token.websites?.length || token.telegram_handle || token.gt_score) && (
+                  {/* Additional DexScreener data - Liquidity */}
+                  {token.liquidity_usd && (
+                    <div className="flex items-center mt-2 text-xs text-muted-foreground">
+                      <DropletIcon className="size-3 mr-1" />
+                      <span>Liquidity: ${Math.round(token.liquidity_usd).toLocaleString()}</span>
+                    </div>
+                  )}
+                  
+                  {/* Social links */}
+                  {(token.twitter_handle || token.websites?.length || token.telegram_handle || token.trust_score) && (
                     <div className="flex items-center mt-3 pt-2 border-t border-border">
                       <div className="flex gap-2 flex-1">
                         {token.twitter_handle && (
@@ -210,21 +219,21 @@ export function TopTokensGrid({ onTokenSelect }: { onTokenSelect: (address: stri
                         )}
                       </div>
                       
-                      {token.gt_score !== undefined && (
+                      {token.trust_score !== undefined && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className={cn(
                                 "text-xs px-2 py-0.5 rounded-full",
-                                token.gt_score >= 70 ? "bg-green-100 text-green-800" :
-                                token.gt_score >= 40 ? "bg-yellow-100 text-yellow-800" :
+                                token.trust_score >= 70 ? "bg-green-100 text-green-800" :
+                                token.trust_score >= 40 ? "bg-yellow-100 text-yellow-800" :
                                 "bg-red-100 text-red-800"
                               )}>
-                                GT: {token.gt_score}
+                                Trust: {token.trust_score}
                               </div>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>GeckoTerminal Trust Score</p>
+                              <p>Trust Score</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>

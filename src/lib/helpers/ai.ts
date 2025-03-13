@@ -293,6 +293,15 @@ Token-Specific Performance:
 
   const userContext = `${walletContext}\n${tokenContext}`.trim();
 
+  // Get token data from either DexScreener or GeckoTerminal
+  const tokenName = startingData.dexScreenerData?.name || startingData.geckoTerminalData?.data?.attributes?.name || "N/A";
+  const tokenSymbol = startingData.dexScreenerData?.symbol || startingData.geckoTerminalData?.data?.attributes?.symbol || "N/A";
+  const tokenPrice = startingData.dexScreenerData?.price_usd || startingData.geckoTerminalData?.included?.[0]?.attributes?.base_token_price_usd || "N/A";
+  const tokenMarketCap = startingData.dexScreenerData?.market_cap_usd || startingData.geckoTerminalData?.data?.attributes?.market_cap_usd || "N/A";
+  const tokenVolume = startingData.dexScreenerData?.volume_24h || (startingData.geckoTerminalData?.data?.attributes?.volume_usd?.h24 || "N/A");
+  const tokenLiquidity = startingData.dexScreenerData?.liquidity_usd || startingData.geckoTerminalData?.data?.attributes?.total_reserve_in_usd || "N/A";
+  const tokenPriceChange = startingData.dexScreenerData?.price_change_24h || (startingData.geckoTerminalData?.included?.[0]?.attributes?.price_change_percentage?.h24 || "N/A");
+
   const claudeSystemPrompt = `You are the lead analyst focused on making immediate DCA IN (buy), DCA OUT (sell), or Hodl (hold) decisions. Your primary goal is to provide personalized recommendations based on the user's current position and trading history with this token.
 
 IMPORTANT - User's Current Position:
@@ -341,22 +350,51 @@ ${nebulaResponse || "No Nebula response available"}
 Online Search Engine Perspective (Perplexity):
 ${perplexityResponse || "No Perplexity response available"}
 
-${
-  startingData.geckoTerminalData
-    ? `Market Data (GeckoTerminal):
-- Current Price: $${startingData.geckoTerminalData?.included?.[0]?.attributes?.base_token_price_usd || "N/A"}
+Market Data (Combined from DexScreener and GeckoTerminal):
+- Current Price: $${tokenPrice}
 - Blockchain ID: ${startingData.chainId}
-- Name: ${startingData.geckoTerminalData?.data?.attributes?.name || "N/A"}
-- Symbol: ${startingData.geckoTerminalData?.data?.attributes?.symbol || "N/A"}
-- Top Pools: ${
-        startingData.geckoTerminalData?.included
-          ?.map(
+- Name: ${tokenName}
+- Symbol: ${tokenSymbol}
+- Market Cap: $${tokenMarketCap}
+- 24h Volume: $${tokenVolume}
+- Liquidity: $${tokenLiquidity}
+- 24h Price Change: ${tokenPriceChange}%
+${
+  startingData.geckoTerminalData?.included
+    ? `- Top Pools: ${
+        startingData.geckoTerminalData.included
+          .map(
             (p) =>
               `\n  * ${p.attributes.name} (24h Volume: $${p.attributes.volume_usd.h24}, Liquidity: $${p.attributes.reserve_in_usd})`,
           )
           .join("") || "N/A"
       }`
-    : "No market data available from GeckoTerminal"
+    : "- No trading pair data available"
+}
+${
+  startingData.dexScreenerData?.description
+    ? `- Token Description: ${startingData.dexScreenerData.description}`
+    : ""
+}
+${
+  startingData.dexScreenerData?.trust_score
+    ? `- Trust Score: ${startingData.dexScreenerData.trust_score}/100`
+    : ""
+}
+${
+  startingData.dexScreenerData?.websites || startingData.dexScreenerData?.discord_url || startingData.dexScreenerData?.telegram_handle || startingData.dexScreenerData?.twitter_handle
+    ? `- Social Links: ${
+        [
+          startingData.dexScreenerData.websites ? `Website: ${startingData.dexScreenerData.websites[0]}` : null,
+          startingData.dexScreenerData.discord_url ? `Discord: ${startingData.dexScreenerData.discord_url}` : null,
+          startingData.dexScreenerData.telegram_handle ? `Telegram: ${startingData.dexScreenerData.telegram_handle}` : null,
+          startingData.dexScreenerData.twitter_handle ? `Twitter: ${startingData.dexScreenerData.twitter_handle}` : null
+        ]
+          .filter(Boolean)
+          .map(link => `\n  * ${link}`)
+          .join("")
+      }`
+    : ""
 }
 
 User Context:
@@ -378,8 +416,8 @@ You must respond with a JSON object using this exact structure:
       "section": "inputs", // get this section from 
       "tokenInfo": {
         "address": "string",
-        "name": "${startingData.geckoTerminalData?.data?.attributes?.name || "N/A"}",
-        "symbol": "${startingData.geckoTerminalData?.data?.attributes?.symbol || "N/A"}",
+        "name": "${tokenName}",
+        "symbol": "${tokenSymbol}",
         "price": "string",
         "marketCap": "string",
         "chainid": "${startingData.chainId}",

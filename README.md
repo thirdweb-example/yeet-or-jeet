@@ -6,13 +6,14 @@ A DeFi trading assistant powered by AI that helps you make informed decisions ab
 
 - **Top Tokens Grid**: Discover high-volume tokens on Berachain
   - View tokens sorted by 24-hour trading volume
-  - See key metrics like price, volume, and market cap
+  - See key metrics like price, volume, market cap, and liquidity
   - Access token social links and websites
   - View token descriptions and trust scores
   - One-click token selection for analysis
 
 - **Real-time Price Data**: Integrated with multiple data sources for accurate and up-to-date token information
-  - GeckoTerminal API for comprehensive token data
+  - DexScreener API for comprehensive DEX trading data
+  - GeckoTerminal API for token metadata
   - OogaBooga's Price API for accurate price information
   - Current price in USD
   - Price updates in real-time
@@ -28,11 +29,24 @@ A DeFi trading assistant powered by AI that helps you make informed decisions ab
 
 ## Technical Integration
 
+### DexScreener API
+
+The application integrates with DexScreener's API to provide real-time DEX trading data:
+
+- **Token Discovery**: Fetches top tokens by volume on Berachain directly from DEXs
+- **Pair Data**: Retrieves detailed information about trading pairs
+  - Price and volume data from actual DEX trades
+  - Liquidity information
+  - Price change percentages
+- **Token Metadata**: Extracts token information from trading pairs
+  - Token addresses, names, and symbols
+  - Social links when available
+  - Trust scores
+
 ### GeckoTerminal API
 
-The application integrates with GeckoTerminal's API to provide rich token data:
+The application also integrates with GeckoTerminal's API as a secondary data source:
 
-- **Token Discovery**: Fetches top tokens by volume on Berachain
 - **Token Metadata**: Retrieves detailed information about tokens
   - Token logos and images
   - Social media links (Twitter, Telegram, Website)
