@@ -25,7 +25,14 @@ export const gatherStartingData = async (
         getContractABI(chainId, tokenAddress),
         getGeckoTerminalData(chainId, tokenAddress),
       ]);
-    const growthScore = calculateGrowthScore(hourlyTransferCounts);
+
+    // Validate required data
+    if (!geckoTerminalData) {
+      throw new Error("Failed to fetch token data from GeckoTerminal");
+    }
+
+    const growthScore = calculateGrowthScore(hourlyTransferCounts || []);
+    
     return {
       chainId,
       tokenAddress,
@@ -36,7 +43,10 @@ export const gatherStartingData = async (
       hourlyTransferCounts,
     };
   } catch (error) {
-    console.error("Error in getTokenInfo:", error);
-    return undefined;
+    console.error("Error in gatherStartingData:", error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to gather token data: ${error.message}`);
+    }
+    throw new Error("Failed to gather token data: Unknown error");
   }
 };

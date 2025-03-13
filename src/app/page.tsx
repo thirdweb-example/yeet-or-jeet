@@ -170,7 +170,11 @@ function ResponseScreen(props: {
       });
 
       if (!res.ok) {
-        throw new Error(res.error);
+        throw new Error(res.error || "Failed to analyze token");
+      }
+
+      if (!res.data || !res.data.sections) {
+        throw new Error("Invalid response format from server");
       }
 
       return res.data as TokenAnalysis;
@@ -207,9 +211,6 @@ function ResponseScreen(props: {
     return () => clearInterval(interval);
   }, []);
 
-  // const inputSection = analysisQuery.data?.sections.find(
-  //   (s) => s.section === "inputs"
-  // );
   const verdictSection = analysisQuery.data?.sections.find(
     (s) => s.section === "verdict",
   );
@@ -254,6 +255,25 @@ function ResponseScreen(props: {
         <div className="flex items-center gap-2 text-muted-foreground">
           <LoadingSpinner className="size-4" />
           <span>{loadingMessage}</span>
+        </div>
+      )}
+
+      {analysisQuery.isError && (
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+          <h3 className="font-semibold mb-2">Error Loading Analysis</h3>
+          <p className="text-sm">
+            {analysisQuery.error instanceof Error
+              ? analysisQuery.error.message
+              : "An unexpected error occurred while analyzing the token"}
+          </p>
+          <Button
+            onClick={() => analysisQuery.refetch()}
+            variant="outline"
+            size="sm"
+            className="mt-4"
+          >
+            Try Again
+          </Button>
         </div>
       )}
 
@@ -305,12 +325,6 @@ function ResponseScreen(props: {
             </div>
           )}
         </>
-      )}
-
-      {analysisQuery.isError && (
-        <div className="text-red-500">
-          Error loading data: {analysisQuery.error.message}
-        </div>
       )}
     </main>
   );
