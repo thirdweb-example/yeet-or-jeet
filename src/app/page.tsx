@@ -34,6 +34,7 @@ import { SourcesSection } from "../components/blocks/SourcesSection";
 import { TradeSummarySection } from "../components/blocks/TradeSummarySection/TradeSummarySection";
 import { MarkdownRenderer } from "../components/blocks/markdown-renderer";
 import { ChevronLeft } from "lucide-react";
+import { TopTokensGrid } from "../components/blocks/TopTokensGrid";
 
 type NebulaTxData = {
   chainId: number;
@@ -124,16 +125,30 @@ function LandingPageScreen(props: {
   onSubmit: (values: { tokenAddress: string }) => void;
 }) {
   return (
-    <main className="grow flex flex-col">
-      <div className="flex-grow flex flex-col items-center justify-center p-6">
-        <h1 className="text-6xl lg:text-8xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-t dark:bg-gradient-to-b from-foreground to-foreground/70 tracking-tight inline-flex gap-2 lg:gap-3 items-center">
+    <main className="container max-w-6xl mx-auto py-8 px-4">
+      <div className="flex flex-col items-center text-center mb-16">
+        <h1 className="text-6xl lg:text-8xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-t dark:bg-gradient-to-b from-foreground to-foreground/70 tracking-tight inline-flex gap-2 lg:gap-3 items-center">
           <span>the b/era</span>
         </h1>
-        <p className="text-xl lg:text-2xl mb-16 text-muted-foreground font-medium text-center">
+        <p className="text-xl lg:text-2xl text-muted-foreground font-medium">
           NFA. DYOR. 1/ WHO TF IS BERACHAIN.
         </p>
+      </div>
 
-        <TokenForm onSubmit={props.onSubmit} />
+      <div className="flex flex-col items-center mb-16">
+        <div className="w-full max-w-sm">
+          <TokenForm onSubmit={props.onSubmit} />
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <h2 className="text-2xl font-semibold tracking-tight">Top Tokens on Berachain</h2>
+        <p className="text-muted-foreground">Click on a token to analyze it</p>
+        <TopTokensGrid 
+          onTokenSelect={(address) => {
+            props.onSubmit({ tokenAddress: address });
+          }} 
+        />
       </div>
     </main>
   );

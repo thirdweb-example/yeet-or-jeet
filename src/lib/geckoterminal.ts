@@ -295,3 +295,47 @@ export const fetchPoolInfo = async (
 
   return poolInfo;
 };
+
+// Add this interface near the other interfaces
+interface TopToken {
+  address: string;
+  name: string;
+  symbol: string;
+  price_usd: string;
+  volume_24h: number;
+  price_change_24h: number;
+  market_cap_usd: number;
+}
+
+// Add this new function to fetch top tokens
+export async function getTopTokens(): Promise<TopToken[]> {
+  try {
+    const network = "berachain";
+    console.log("Fetching top tokens on Berachain");
+    
+    // Get network tokens sorted by volume
+    const response = await fetchGeckoTerminal(
+      `/networks/${network}/tokens?page=1&per_page=12&sort=volume_24h_desc`
+    );
+
+    if (!response?.data) {
+      throw new Error("No tokens found");
+    }
+
+    const tokens = response.data.map((token: any) => ({
+      address: token.attributes.address,
+      name: token.attributes.name,
+      symbol: token.attributes.symbol,
+      price_usd: token.attributes.price_usd || "0",
+      volume_24h: token.attributes.volume_24h || 0,
+      price_change_24h: token.attributes.price_change_24h || 0,
+      market_cap_usd: token.attributes.market_cap_usd || 0,
+    }));
+
+    console.log("Found top tokens:", tokens);
+    return tokens;
+  } catch (error) {
+    console.error("Error fetching top tokens:", error);
+    throw error;
+  }
+}
