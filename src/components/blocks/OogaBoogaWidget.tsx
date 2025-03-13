@@ -1,6 +1,5 @@
 "use client";
 
-import { useTheme } from "next-themes";
 import { cn } from "../../lib/utils";
 import { LoadingSpinner } from "./Loading";
 import { useState, useEffect, useCallback } from "react";
