@@ -310,12 +310,19 @@ interface TopToken {
 // Add this new function to fetch top tokens
 export async function getTopTokens(): Promise<TopToken[]> {
   try {
-    const network = "berachain";
+    // Berachain's network identifier in GeckoTerminal is "bera"
+    const network = "bera";
     console.log("Fetching top tokens on Berachain");
     
-    // Get network pools sorted by volume
+    // First get network overview to ensure the network is supported
+    const networkData = await fetchGeckoTerminal(`/networks/${network}`);
+    if (!networkData?.data) {
+      throw new Error("Network not found");
+    }
+
+    // Get top pools by volume
     const response = await fetchGeckoTerminal(
-      `/networks/${network}/pools?page=1&per_page=20&sort=volume_usd_24h_desc`
+      `/networks/${network}/pools?page=1&page_size=20&sort=volume_24h`
     );
 
     if (!response?.data) {
@@ -327,32 +334,31 @@ export async function getTopTokens(): Promise<TopToken[]> {
     const tokens: TopToken[] = [];
 
     for (const pool of response.data) {
-      const baseTokenId = pool.relationships.base_token.data.id;
-      const quoteTokenId = pool.relationships.quote_token.data.id;
+      const baseToken = pool.relationships?.base_token?.data;
+      const quoteToken = pool.relationships?.quote_token?.data;
       
+      if (!baseToken || !quoteToken) continue;
+
       // Extract token addresses
-      const [, baseAddress] = baseTokenId.split('_');
-      const [, quoteAddress] = quoteTokenId.split('_');
-      
-      // Only process each token once
-      for (const address of [baseAddress, quoteAddress]) {
+      for (const token of [baseToken, quoteToken]) {
+        const address = token.id.split('_')[1];
         if (!uniqueTokens.has(address)) {
           uniqueTokens.add(address);
           
           try {
-            // Get token details
-            const tokenData = await fetchGeckoTerminal(`/networks/${network}/tokens/${address}`);
-            const priceData = await fetchGeckoTerminal(`/networks/${network}/tokens/${address}/price`);
+            // Get token details and price in a single request
+            const tokenData = await fetchGeckoTerminal(`/networks/${network}/tokens/${address}/info`);
             
-            if (tokenData?.data?.attributes && priceData?.data?.attributes) {
+            if (tokenData?.data?.attributes) {
+              const attrs = tokenData.data.attributes;
               tokens.push({
                 address: address,
-                name: tokenData.data.attributes.name,
-                symbol: tokenData.data.attributes.symbol,
-                price_usd: priceData.data.attributes.price_usd || "0",
-                volume_24h: priceData.data.attributes.volume_24h || 0,
-                price_change_24h: priceData.data.attributes.price_change_24h || 0,
-                market_cap_usd: priceData.data.attributes.market_cap_usd || 0,
+                name: attrs.name,
+                symbol: attrs.symbol,
+                price_usd: attrs.price_usd || "0",
+                volume_24h: attrs.volume_24h || 0,
+                price_change_24h: attrs.price_change_24h || 0,
+                market_cap_usd: attrs.market_cap_usd || 0,
               });
             }
           } catch (error) {
