@@ -319,8 +319,20 @@ export interface TopToken {
 }
 
 // Add this function to check if a token is a stablecoin
-function isStablecoin(symbol: string): boolean {
-  if (!symbol) return false;
+function isStablecoin(symbol: string, address?: string): boolean {
+  if (!symbol && !address) return false;
+  
+  // Specific stablecoin addresses to exclude from the homepage
+  const stablecoinAddresses = [
+    '0x1ce0a25d13ce4d52071ae7e02cf1f6606f4c79d3', // NECT
+    '0x211cc4dd073734da055fbf44a2b4667d5e5fe5d2', // sUSD.e
+    '0x2840f9d9f96321435ab0f977e7fdbf32ea8b304f', // sUSDa
+  ];
+  
+  // Check if the address matches any known stablecoin address
+  if (address && stablecoinAddresses.includes(address.toLowerCase())) {
+    return true;
+  }
   
   // Expanded list of stablecoins and their variations
   const stablecoins = [
@@ -329,24 +341,27 @@ function isStablecoin(symbol: string): boolean {
     'USDN', 'USDH', 'USDL', 'USDR', 'USDV', 'USDW', 'USDY', 'USDZ',
     'EURT', 'EURS', 'EUROC', 'EURU', 'JEUR', 'SEUR',
     'CADC', 'XSGD', 'XIDR', 'NZDS', 'TRYB', 'BIDR', 'BRLC', 'CNHT', 'IDRT', 'KRWB',
-    'MIM', 'USDM', 'USDS', 'USDE', 'USDEX', 'USDFL', 'USDQ', 'USDG', 'USDTG'
+    'MIM', 'USDM', 'USDS', 'USDE', 'USDEX', 'USDFL', 'USDQ', 'USDG', 'USDTG',
+    'NECT', 'SUSD.E', 'SUSDA' // Add the specific stablecoins
   ];
   
   // Check if the symbol contains any of the stablecoin identifiers
-  const upperSymbol = symbol.toUpperCase();
-  
-  // Direct match
-  if (stablecoins.includes(upperSymbol)) return true;
-  
-  // Check for common patterns in stablecoin names
-  if (upperSymbol.startsWith('USD') || 
-      upperSymbol.endsWith('USD') || 
-      upperSymbol.includes('USD') ||
-      upperSymbol.startsWith('EUR') ||
-      upperSymbol.endsWith('EUR') ||
-      upperSymbol.includes('STABLE') ||
-      upperSymbol.includes('PEG')) {
-    return true;
+  if (symbol) {
+    const upperSymbol = symbol.toUpperCase();
+    
+    // Direct match
+    if (stablecoins.includes(upperSymbol)) return true;
+    
+    // Check for common patterns in stablecoin names
+    if (upperSymbol.startsWith('USD') || 
+        upperSymbol.endsWith('USD') || 
+        upperSymbol.includes('USD') ||
+        upperSymbol.startsWith('EUR') ||
+        upperSymbol.endsWith('EUR') ||
+        upperSymbol.includes('STABLE') ||
+        upperSymbol.includes('PEG')) {
+      return true;
+    }
   }
   
   return false;
@@ -382,7 +397,7 @@ export async function getTopTokens(): Promise<TopToken[]> {
         const baseTokenSymbol = pool.attributes.base_token_symbol;
         
         // Skip stablecoins
-        if (isStablecoin(baseTokenSymbol)) {
+        if (isStablecoin(baseTokenSymbol, baseTokenAddress)) {
           console.log(`Skipping stablecoin: ${baseTokenSymbol}`);
           continue;
         }
@@ -409,7 +424,7 @@ export async function getTopTokens(): Promise<TopToken[]> {
         const quoteTokenSymbol = pool.attributes.quote_token_symbol;
         
         // Skip stablecoins
-        if (isStablecoin(quoteTokenSymbol)) {
+        if (isStablecoin(quoteTokenSymbol, quoteTokenAddress)) {
           console.log(`Skipping stablecoin: ${quoteTokenSymbol}`);
           continue;
         }
@@ -453,7 +468,7 @@ export async function getTopTokens(): Promise<TopToken[]> {
           const attrs = tokenResponse.data.attributes;
           
           // Skip stablecoins (double check)
-          if (isStablecoin(attrs.symbol)) {
+          if (isStablecoin(attrs.symbol, address)) {
             console.log(`Skipping stablecoin: ${attrs.symbol}`);
             continue;
           }

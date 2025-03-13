@@ -11,6 +11,8 @@ A DeFi trading assistant powered by AI that helps you make informed decisions ab
   - View token descriptions and trust scores
   - One-click token selection for analysis
   - Automatic filtering of stablecoins for more relevant analysis
+    - Excludes common stablecoins (USDT, USDC, DAI, etc.)
+    - Specifically excludes Berachain stablecoins (NECT, sUSD.e, sUSDa)
   - Fallback to curated token list when APIs are unavailable
 
 - **Real-time Price Data**: Integrated with multiple data sources for accurate and up-to-date token information
