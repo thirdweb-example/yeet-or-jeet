@@ -163,21 +163,31 @@ function ResponseScreen(props: {
       },
     ],
     queryFn: async () => {
-      const res = await getTokenAnalysis({
-        chainId: props.chain.id,
-        tokenAddress: props.tokenAddress,
-        walletAddress: props.walletAddress,
-      });
+      try {
+        const res = await getTokenAnalysis({
+          chainId: props.chain.id,
+          tokenAddress: props.tokenAddress,
+          walletAddress: props.walletAddress,
+        });
 
-      if (!res.ok) {
-        throw new Error(res.error || "Failed to analyze token");
+        if (!res.ok) {
+          console.error("Server returned error:", res.error);
+          throw new Error(res.error || "Failed to analyze token");
+        }
+
+        if (!res.data || !res.data.sections) {
+          console.error("Invalid response format:", res.data);
+          throw new Error("Invalid response format from server");
+        }
+
+        return res.data as TokenAnalysis;
+      } catch (error) {
+        console.error("Query function error:", error);
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error("An unexpected error occurred while analyzing the token");
       }
-
-      if (!res.data || !res.data.sections) {
-        throw new Error("Invalid response format from server");
-      }
-
-      return res.data as TokenAnalysis;
     },
     retry: false,
     refetchOnMount: false,
@@ -266,14 +276,22 @@ function ResponseScreen(props: {
               ? analysisQuery.error.message
               : "An unexpected error occurred while analyzing the token"}
           </p>
-          <Button
-            onClick={() => analysisQuery.refetch()}
-            variant="outline"
-            size="sm"
-            className="mt-4"
-          >
-            Try Again
-          </Button>
+          <div className="mt-4 flex gap-2">
+            <Button
+              onClick={() => analysisQuery.refetch()}
+              variant="outline"
+              size="sm"
+            >
+              Try Again
+            </Button>
+            <Button
+              onClick={props.onBack}
+              variant="outline"
+              size="sm"
+            >
+              Go Back
+            </Button>
+          </div>
         </div>
       )}
 

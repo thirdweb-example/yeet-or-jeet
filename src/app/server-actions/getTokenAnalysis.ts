@@ -55,6 +55,7 @@ export async function getTokenAnalysis(params: {
       };
     }
 
+    console.log("Starting data gathering for token:", params.tokenAddress);
     const info = await gatherStartingData(
       params.chainId,
       params.tokenAddress,
@@ -62,11 +63,14 @@ export async function getTokenAnalysis(params: {
     );
 
     if (!info) {
+      console.error("Failed to gather starting data");
       return {
         ok: false,
         error: "Failed to gather token data",
       };
     }
+
+    console.log("Starting data gathered successfully");
 
     const initialQuestion = `
       You are a financial analyst with access to on-chain data. Analyze this token and the user's wallet:
@@ -86,15 +90,18 @@ export async function getTokenAnalysis(params: {
       If they don't have a position, is this a good entry point?
     `;
 
+    console.log("Formatting questions with Claude");
     const questions = await formatQuestionsWithClaude(initialQuestion);
 
     if (!questions) {
+      console.error("Failed to format questions with Claude");
       return {
         ok: false,
         error: "Failed to analyze token",
       };
     }
 
+    console.log("Questions formatted successfully, calling AI services");
     const [nebulaAnswer, perplexityAnswer] = await Promise.all([
       askNebula(
         questions.nebulaQuestion,
@@ -106,12 +113,14 @@ export async function getTokenAnalysis(params: {
     ]);
 
     if (!nebulaAnswer && !perplexityAnswer) {
+      console.error("Both AI services failed to respond");
       return {
         ok: false,
         error: "Failed to get answers from AI services",
       };
     }
 
+    console.log("AI responses received, synthesizing");
     const synthesis = await synthesizeResponses(
       info,
       nebulaAnswer || "",
@@ -119,6 +128,7 @@ export async function getTokenAnalysis(params: {
     );
 
     if (!synthesis) {
+      console.error("Failed to synthesize responses");
       return {
         ok: false,
         error: "Failed to synthesize AI responses",
@@ -133,13 +143,16 @@ export async function getTokenAnalysis(params: {
       .trim();
 
     try {
+      console.log("Parsing synthesis");
       const parsedSynthesis = JSON.parse(cleanedSynthesis) as TokenAnalysis;
 
       // Validate the response structure
       if (!parsedSynthesis.sections || !Array.isArray(parsedSynthesis.sections)) {
+        console.error("Invalid synthesis structure:", parsedSynthesis);
         throw new Error("Invalid synthesis structure");
       }
 
+      console.log("Analysis completed successfully");
       return {
         ok: true,
         data: parsedSynthesis,
@@ -154,9 +167,16 @@ export async function getTokenAnalysis(params: {
     }
   } catch (error) {
     console.error("Error in getTokenAnalysis:", error);
+    if (error instanceof Error) {
+      console.error("Error stack:", error.stack);
+      return {
+        ok: false,
+        error: error.message,
+      };
+    }
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "An unexpected error occurred",
+      error: "An unexpected error occurred",
     };
   }
 }
