@@ -42,6 +42,7 @@ export interface TokenInfo {
 
 async function fetchGeckoTerminal(endpoint: string) {
   try {
+    console.log(`Fetching GeckoTerminal API: ${BASE_URL}${endpoint}`);
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       headers: {
         Accept: `application/json;version=${API_VERSION}`,
@@ -50,15 +51,19 @@ async function fetchGeckoTerminal(endpoint: string) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("GeckoTerminal API error:", {
+      console.error("GeckoTerminal API error details:", {
+        endpoint,
         status: response.status,
         statusText: response.statusText,
         data: errorData,
+        headers: Object.fromEntries(response.headers.entries()),
       });
       throw new Error(`GeckoTerminal API error: ${response.status} - ${response.statusText}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log(`GeckoTerminal API response for ${endpoint}:`, data);
+    return data;
   } catch (error) {
     console.error("GeckoTerminal API error:", error);
     throw error;
@@ -70,6 +75,7 @@ export async function getTokenInfo(
   address: string,
 ): Promise<TokenInfo> {
   try {
+    console.log(`Getting token info for chain ${chainId}, address ${address}`);
     const network = geckoNetworkMap[chainId];
     if (!network) {
       throw new Error(`Unsupported chain ID: ${chainId}`);
@@ -77,13 +83,18 @@ export async function getTokenInfo(
 
     // Convert address to lowercase for consistency
     const normalizedAddress = address.toLowerCase();
+    console.log(`Normalized address: ${normalizedAddress}`);
 
-    const [priceData, tokenData, poolsData] = await Promise.all([
-      // Get token price
+    // First try to get token info to verify the token exists
+    const tokenData = await fetchGeckoTerminal(`/networks/${network}/tokens/${normalizedAddress}/info`);
+    
+    if (!tokenData?.data?.attributes) {
+      throw new Error(`Token not found on ${network}`);
+    }
+
+    // Then get price and pools data
+    const [priceData, poolsData] = await Promise.all([
       fetchGeckoTerminal(`/simple/networks/${network}/token_price/${normalizedAddress}`),
-      // Get token info
-      fetchGeckoTerminal(`/networks/${network}/tokens/${normalizedAddress}/info`),
-      // Get top pools
       fetchGeckoTerminal(`/networks/${network}/tokens/${normalizedAddress}/pools`),
     ]);
 
@@ -117,6 +128,10 @@ export async function getTokenInfo(
             .toLowerCase(),
         },
       }));
+    }
+
+    if (!tokenInfo.name || !tokenInfo.symbol) {
+      throw new Error("Token data incomplete");
     }
 
     return tokenInfo;
