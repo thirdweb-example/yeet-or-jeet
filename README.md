@@ -4,7 +4,16 @@ A DeFi trading assistant powered by AI that helps you make informed decisions ab
 
 ## Features
 
-- **Real-time Price Data**: Integrated with OogaBooga's Price API for accurate and up-to-date token information
+- **Top Tokens Grid**: Discover high-volume tokens on Berachain
+  - View tokens sorted by 24-hour trading volume
+  - See key metrics like price, volume, and market cap
+  - Access token social links and websites
+  - View token descriptions and trust scores
+  - One-click token selection for analysis
+
+- **Real-time Price Data**: Integrated with multiple data sources for accurate and up-to-date token information
+  - GeckoTerminal API for comprehensive token data
+  - OogaBooga's Price API for accurate price information
   - Current price in USD
   - Price updates in real-time
   - Support for all whitelisted tokens on Berachain
@@ -18,6 +27,18 @@ A DeFi trading assistant powered by AI that helps you make informed decisions ab
   - Multi-hop routing support
 
 ## Technical Integration
+
+### GeckoTerminal API
+
+The application integrates with GeckoTerminal's API to provide rich token data:
+
+- **Token Discovery**: Fetches top tokens by volume on Berachain
+- **Token Metadata**: Retrieves detailed information about tokens
+  - Token logos and images
+  - Social media links (Twitter, Telegram, Website)
+  - Token descriptions
+  - GeckoTerminal trust scores
+  - Market data (price, volume, market cap)
 
 ### OogaBooga Aggregator
 

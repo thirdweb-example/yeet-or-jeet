@@ -145,8 +145,8 @@ export function TopTokensGrid({ onTokenSelect }: { onTokenSelect: (address: stri
                     </div>
                   </div>
                   <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                    <span>Vol: ${token.volume_24h.toLocaleString()}</span>
-                    <span>MC: ${token.market_cap_usd.toLocaleString()}</span>
+                    <span>Vol: ${Math.round(token.volume_24h).toLocaleString()}</span>
+                    <span>MC: ${Math.round(token.market_cap_usd).toLocaleString()}</span>
                   </div>
                   
                   {/* Social links and GT score */}
