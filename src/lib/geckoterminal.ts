@@ -402,12 +402,21 @@ export async function getTopTokens(): Promise<TopToken[]> {
           continue;
         }
         
+        // Get volume for base token
+        const baseTokenVolume = pool.attributes.volume_usd?.h24 || 0;
+        
+        // Skip tokens with volume below $100K
+        if (baseTokenVolume < 100000) {
+          console.log(`Skipping low volume token: ${baseTokenSymbol} (volume: $${baseTokenVolume.toLocaleString()})`);
+          continue;
+        }
+        
         // Update token info if we have a price
         if (baseTokenPrice && !tokenMap.has(baseTokenAddress)) {
           tokenMap.set(baseTokenAddress, {
             address: baseTokenAddress,
             price_usd: baseTokenPrice,
-            volume_24h: pool.attributes.volume_usd?.h24 || 0,
+            volume_24h: baseTokenVolume,
             name: pool.attributes.base_token_name || "",
             symbol: baseTokenSymbol || "",
             price_change_24h: pool.attributes.price_change_percentage?.h24 || 0,
@@ -429,12 +438,21 @@ export async function getTopTokens(): Promise<TopToken[]> {
           continue;
         }
         
+        // Get volume for quote token
+        const quoteTokenVolume = pool.attributes.volume_usd?.h24 || 0;
+        
+        // Skip tokens with volume below $100K
+        if (quoteTokenVolume < 100000) {
+          console.log(`Skipping low volume token: ${quoteTokenSymbol} (volume: $${quoteTokenVolume.toLocaleString()})`);
+          continue;
+        }
+        
         // Update token info if we have a price
         if (quoteTokenPrice && !tokenMap.has(quoteTokenAddress)) {
           tokenMap.set(quoteTokenAddress, {
             address: quoteTokenAddress,
             price_usd: quoteTokenPrice,
-            volume_24h: pool.attributes.volume_usd?.h24 || 0,
+            volume_24h: quoteTokenVolume,
             name: pool.attributes.quote_token_name || "",
             symbol: quoteTokenSymbol || "",
             price_change_24h: -1 * (pool.attributes.price_change_percentage?.h24 || 0), // Invert for quote token
@@ -444,7 +462,7 @@ export async function getTopTokens(): Promise<TopToken[]> {
       }
     }
     
-    console.log(`Extracted ${tokenMap.size} unique non-stablecoin tokens from pools data`);
+    console.log(`Extracted ${tokenMap.size} unique non-stablecoin tokens with volume >= $100K from pools data`);
     
     // Now try to get detailed information for each token
     const tokens: TopToken[] = [];
@@ -546,10 +564,13 @@ export async function getTopTokens(): Promise<TopToken[]> {
     // Sort by volume
     tokens.sort((a, b) => b.volume_24h - a.volume_24h);
     
-    // Limit to 12 tokens
-    const result = tokens.slice(0, 12);
+    // Filter out tokens with volume below $100K
+    const filteredTokens = tokens.filter(token => token.volume_24h >= 100000);
     
-    console.log(`Returning ${result.length} top non-stablecoin tokens with real-time data`);
+    // Limit to 12 tokens
+    const result = filteredTokens.slice(0, 12);
+    
+    console.log(`Returning ${result.length} top non-stablecoin tokens with volume >= $100K`);
     return result;
   } catch (error) {
     console.error("Error fetching real-time token data:", error);
@@ -564,6 +585,7 @@ export async function getTopTokens(): Promise<TopToken[]> {
  * Returns a list of hardcoded tokens as a fallback when APIs fail
  */
 function getHardcodedTokens(): TopToken[] {
+  // Only include hardcoded tokens with volume >= $100K
   return [
     {
       address: "0x6536cEAD649249cae42FC9bfb1F999429b3ec755",

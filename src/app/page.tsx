@@ -128,7 +128,7 @@ function LandingPageScreen(props: {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-semibold tracking-tight">Top Trading Tokens</h2>
-              <p className="text-muted-foreground mt-1">Highest 24h volume on Berachain</p>
+              <p className="text-muted-foreground mt-1">Highest 24h volume ({'>'}$100K) on Berachain</p>
             </div>
             {account && (
               <p className="text-sm text-muted-foreground">
