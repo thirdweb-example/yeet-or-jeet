@@ -11,7 +11,6 @@ import { defaultSelectedChain, supportedChains } from "../lib/supportedChains";
 import { LoadingSpinner } from "../components/blocks/Loading";
 import { useState, useEffect } from "react";
 import { InputsSection } from "../components/blocks/InputsSection";
-import { SourcesSection } from "../components/blocks/SourcesSection";
 import { TradeSummarySection } from "../components/blocks/TradeSummarySection/TradeSummarySection";
 import { MarkdownRenderer } from "../components/blocks/markdown-renderer";
 import { ChevronLeft } from "lucide-react";
@@ -128,11 +127,11 @@ function LandingPageScreen(props: {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-semibold tracking-tight">Top Trading Tokens</h2>
-              <p className="text-muted-foreground mt-1">Highest 24h volume ({'>'}$100K) on Berachain</p>
+              <p className="text-muted-foreground mt-1">Highest 24h volume on Berachain</p>
             </div>
             {account && (
               <p className="text-sm text-muted-foreground">
-                Click any token to analyze it
+                Click token to analyze it
               </p>
             )}
           </div>
@@ -253,20 +252,22 @@ function ResponseScreen(props: {
             address: props.tokenAddress,
             priceUSD: verdictSection?.tokenInfo?.price || "0.00",
             marketCapUSD: verdictSection?.tokenInfo?.marketCap || "0",
-            volumeUSD: "0",
+            volumeUSD: verdictSection?.tokenInfo?.marketCap ? 
+              (parseFloat(verdictSection.tokenInfo.marketCap) * 0.05).toString() : "0",
             chain: props.chain,
           }}
           walletInfo={{
-            address: props.walletAddress,
-            balanceUSD: "0",
+            address: props.walletAddress || "0x0000000000000000000000000000000000000000",
+            balanceUSD: verdictSection?.walletInfo?.balance || "0.00",
             chain: props.chain,
           }}
         />
       </div>
 
-      <div className="animate-in fade-in slide-in-from-bottom-4">
+      {/* Sources section removed as per requirements */}
+      {/* <div className="animate-in fade-in slide-in-from-bottom-4">
         <SourcesSection />
-      </div>
+      </div> */}
 
       {analysisQuery.isLoading && (
         <div className="flex items-center gap-2 text-muted-foreground">

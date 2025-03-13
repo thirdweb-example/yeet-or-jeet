@@ -38,6 +38,19 @@ export function TokenInfoCard(props: TokenInfo) {
     <TokenName loadingComponent={<Skeleton className="h-4 w-[100px]" />} />
   );
 
+  // Format price, market cap, and volume with default values if they're zero or missing
+  const formattedPrice = props.priceUSD === "0.00" || !props.priceUSD 
+    ? "$0.00" 
+    : `$${parseFloat(props.priceUSD).toLocaleString()}`;
+  
+  const formattedMarketCap = props.marketCapUSD === "0" || !props.marketCapUSD 
+    ? "$0" 
+    : `$${parseFloat(props.marketCapUSD).toLocaleString()}`;
+  
+  const formattedVolume = props.volumeUSD === "0" || !props.volumeUSD 
+    ? "$0" 
+    : `$${parseFloat(props.volumeUSD).toLocaleString()}`;
+
   return (
     <TokenProvider
       address={props.address}
@@ -77,18 +90,18 @@ export function TokenInfoCard(props: TokenInfo) {
                 tokenName
               )}
             </h3>
-            <p className="font-bold text-xl text-primary">${props.priceUSD}</p>
+            <p className="font-bold text-xl text-primary">{formattedPrice}</p>
           </div>
 
           {/* Row 2 - Market Cap and Volume */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <p className="text-xs font-medium text-muted-foreground">Market Cap</p>
-              <p className="text-sm font-semibold">${props.marketCapUSD}</p>
+              <p className="text-sm font-semibold">{formattedMarketCap}</p>
             </div>
             <div className="space-y-1">
               <p className="text-xs font-medium text-muted-foreground">24h Volume</p>
-              <p className="text-sm font-semibold">${props.volumeUSD}</p>
+              <p className="text-sm font-semibold">{formattedVolume}</p>
             </div>
           </div>
         </div>
@@ -135,6 +148,11 @@ export function WalletInfoCard(props: WalletInfo) {
     />
   );
 
+  // Format balance with default value if it's zero or missing
+  const formattedBalance = props.balanceUSD === "0" || !props.balanceUSD 
+    ? "$0.00" 
+    : props.balanceUSD;
+
   return (
     <AccountProvider address={props.address} client={thirdwebClient}>
       <div
@@ -170,7 +188,7 @@ export function WalletInfoCard(props: WalletInfo) {
                 displayName
               )}
             </h3>
-            <p className="font-medium text-base">{props.balanceUSD}</p>
+            <p className="font-medium text-base">{formattedBalance}</p>
           </div>
 
           {/* Row 2 */}
@@ -182,7 +200,7 @@ export function WalletInfoCard(props: WalletInfo) {
                   {walletStatsQuery.data.winrate}%
                 </span>
               ) : (
-                <Skeleton className="h-3 w-10 inline-block" />
+                <span className="text-muted-foreground">--</span>
               )}
             </div>
             <div className="flex items-center gap-1">
@@ -197,7 +215,7 @@ export function WalletInfoCard(props: WalletInfo) {
                   })}
                 </span>
               ) : (
-                <Skeleton className="h-3 w-10 inline-block" />
+                <span className="text-muted-foreground">--</span>
               )}
             </div>
           </div>
