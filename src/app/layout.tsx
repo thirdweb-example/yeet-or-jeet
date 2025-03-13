@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "the b/era",
-  description: "NFA. DYOR",
+  title: "the b/era, berachain token analyzer",
+  description: "Click any berachain token to analyze it with AI",
 };
 
 export default function RootLayout({

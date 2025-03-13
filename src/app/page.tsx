@@ -114,7 +114,7 @@ function LandingPageScreen(props: {
           <span>the b/era</span>
         </h1>
         <p className="text-xl lg:text-2xl text-muted-foreground font-medium mb-8">
-          NFA. DYOR. 1/ WHO TF IS BERACHAIN.
+          THE BERACHAIN TOKEN ANALYZER
         </p>
         {!account && (
           <div className="w-full max-w-sm">
