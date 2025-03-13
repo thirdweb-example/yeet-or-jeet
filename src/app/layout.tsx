@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "This is the b/era",
+  title: "the b/era",
   description: "NFA. DYOR",
 };
 

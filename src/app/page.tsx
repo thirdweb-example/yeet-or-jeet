@@ -129,7 +129,7 @@ function LandingPageScreen(props: {
     <main className="grow flex flex-col">
       <div className="flex-grow flex flex-col items-center justify-center p-6">
         <h1 className="text-6xl lg:text-8xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-t dark:bg-gradient-to-b from-foreground to-foreground/70 tracking-tight inline-flex gap-2 lg:gap-3 items-center">
-          <span>This is the b/era</span>
+          <span>the b/era</span>
         </h1>
         <p className="text-xl lg: mb-16 text-muted-foreground font-medium">
           NFA. DYOR. 1/ WHAT.
