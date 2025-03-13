@@ -1,7 +1,5 @@
 // these can be fetched from their API, but we're just going to hardcode them for now
 const chainIdToSlug: Record<number, string> = {
-  8453: "base",
-  1: "eth",
   80094: "berachain",
 };
 

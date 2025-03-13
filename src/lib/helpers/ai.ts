@@ -439,14 +439,7 @@ Make sure to:
 
 function getChainName(chainId: number): string {
   const chainMap: Record<number, string> = {
-    1: "ethereum",
-    137: "polygon",
-    56: "bsc",
-    42161: "arbitrum",
-    10: "optimism",
-    8453: "base",
     80094: "berachain",
-    // Add more chains as needed
   };
-  return chainMap[chainId] || "ethereum";
+  return chainMap[chainId] || "berachain";
 }

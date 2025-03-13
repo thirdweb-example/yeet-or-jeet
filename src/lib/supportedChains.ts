@@ -1,5 +1,4 @@
 import type { Chain } from "thirdweb";
-import { ethereum } from "thirdweb/chains";
 
 const berachain: Chain = {
   id: 80094,
@@ -18,5 +17,5 @@ const berachain: Chain = {
   ],
 };
 
-export const supportedChains: Chain[] = [berachain, ethereum];
+export const supportedChains: Chain[] = [berachain];
 export const defaultSelectedChain = berachain;

@@ -6,8 +6,7 @@ import { LoadingSpinner } from "./Loading";
 import { useState } from "react";
 
 const uniswapChainMap = {
-  1: "ethereum",
-  8453: "base",
+  80094: "berachain",
 } as const;
 
 type UniswapWidgetProps = {
