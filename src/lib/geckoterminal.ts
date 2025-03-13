@@ -313,24 +313,60 @@ export async function getTopTokens(): Promise<TopToken[]> {
     const network = "berachain";
     console.log("Fetching top tokens on Berachain");
     
-    // Get network tokens sorted by volume
+    // Get network pools sorted by volume
     const response = await fetchGeckoTerminal(
-      `/networks/${network}/tokens?page=1&per_page=12&sort=volume_24h_desc`
+      `/networks/${network}/pools?page=1&per_page=20&sort=volume_usd_24h_desc`
     );
 
     if (!response?.data) {
-      throw new Error("No tokens found");
+      throw new Error("No pools found");
     }
 
-    const tokens = response.data.map((token: any) => ({
-      address: token.attributes.address,
-      name: token.attributes.name,
-      symbol: token.attributes.symbol,
-      price_usd: token.attributes.price_usd || "0",
-      volume_24h: token.attributes.volume_24h || 0,
-      price_change_24h: token.attributes.price_change_24h || 0,
-      market_cap_usd: token.attributes.market_cap_usd || 0,
-    }));
+    // Extract unique tokens from pools and get their details
+    const uniqueTokens = new Set<string>();
+    const tokens: TopToken[] = [];
+
+    for (const pool of response.data) {
+      const baseTokenId = pool.relationships.base_token.data.id;
+      const quoteTokenId = pool.relationships.quote_token.data.id;
+      
+      // Extract token addresses
+      const [, baseAddress] = baseTokenId.split('_');
+      const [, quoteAddress] = quoteTokenId.split('_');
+      
+      // Only process each token once
+      for (const address of [baseAddress, quoteAddress]) {
+        if (!uniqueTokens.has(address)) {
+          uniqueTokens.add(address);
+          
+          try {
+            // Get token details
+            const tokenData = await fetchGeckoTerminal(`/networks/${network}/tokens/${address}`);
+            const priceData = await fetchGeckoTerminal(`/networks/${network}/tokens/${address}/price`);
+            
+            if (tokenData?.data?.attributes && priceData?.data?.attributes) {
+              tokens.push({
+                address: address,
+                name: tokenData.data.attributes.name,
+                symbol: tokenData.data.attributes.symbol,
+                price_usd: priceData.data.attributes.price_usd || "0",
+                volume_24h: priceData.data.attributes.volume_24h || 0,
+                price_change_24h: priceData.data.attributes.price_change_24h || 0,
+                market_cap_usd: priceData.data.attributes.market_cap_usd || 0,
+              });
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch data for token ${address}:`, error);
+          }
+        }
+      }
+
+      // Limit to top 12 tokens
+      if (tokens.length >= 12) break;
+    }
+
+    // Sort by volume
+    tokens.sort((a, b) => b.volume_24h - a.volume_24h);
 
     console.log("Found top tokens:", tokens);
     return tokens;
