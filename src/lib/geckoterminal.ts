@@ -310,7 +310,8 @@ interface TopToken {
 // Add this new function to fetch top tokens
 export async function getTopTokens(): Promise<TopToken[]> {
   try {
-    const network = "berachain";
+    // Use the exact network ID from the GeckoTerminal API
+    const network = "berachain"; // Found in the API response
     console.log("Fetching top tokens on Berachain");
     
     // Get top pools by volume
