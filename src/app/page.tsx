@@ -132,7 +132,7 @@ function LandingPageScreen(props: {
           <span>the b/era</span>
         </h1>
         <p className="text-xl lg: mb-16 text-muted-foreground font-medium">
-          NFA. DYOR. 1/ WHAT.
+          NFA. DYOR. 1/ WHO TF IS BERACHAIN.
         </p>
 
         <TokenForm
