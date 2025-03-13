@@ -311,10 +311,15 @@ function ResponseScreen(props: {
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
               <div className="space-y-6">
                 <h3 className="text-xl font-semibold tracking-tight">Detailed Analysis</h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <MarkdownRenderer markdownText={detailsSection.content || ""} />
+                <div className="w-full">
+                  <div className="prose prose-lg dark:prose-invert max-w-none">
+                    <div className="space-y-8">
+                      <MarkdownRenderer 
+                        markdownText={detailsSection.content?.split('##').map((section, index) => {
+                          if (index === 0) return section.trim();
+                          return `\n\n## ${section.trim()}`;
+                        }).join('\n\n') || ""} 
+                      />
                     </div>
                   </div>
                 </div>

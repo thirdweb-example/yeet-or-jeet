@@ -54,14 +54,8 @@ export const MarkdownRenderer: React.FC<{
             />
           ),
 
-          h2: (props) => (
-            <h3
-              {...cleanedProps(props)}
-              className={cn(
-                commonHeadingClassName,
-                "mt-8 mb-4 border-border border-b text-2xl",
-              )}
-            />
+          h2: ({ children }) => (
+            <h2 className="text-2xl font-bold mt-12 mb-6 text-primary">{children}</h2>
           ),
 
           h3: (props) => (
@@ -123,14 +117,8 @@ export const MarkdownRenderer: React.FC<{
             );
           },
 
-          p: (props) => (
-            <p
-              className={cn(
-                "mb-4 text-muted-foreground leading-loose",
-                markdownProps.p?.className,
-              )}
-              {...cleanedProps(props)}
-            />
+          p: ({ children }) => (
+            <p className="text-base leading-relaxed mb-4">{children}</p>
           ),
 
           table: (props) => (
@@ -156,36 +144,24 @@ export const MarkdownRenderer: React.FC<{
           thead: (props) => <TableHeader {...cleanedProps(props)} />,
           tbody: (props) => <TableBody {...cleanedProps(props)} />,
           tr: (props) => <TableRow {...cleanedProps(props)} />,
-          ul: (props) => {
-            return (
-              <ul
-                className="mb-6 list-outside list-disc pl-5 [&_ol_li:first-of-type]:mt-1.5 [&_ul_li:first-of-type]:mt-1.5"
-                {...cleanedProps(props)}
-              />
-            );
-          },
+          ul: ({ children }) => (
+            <ul className="list-disc list-inside space-y-2 mb-6">{children}</ul>
+          ),
           ol: (props) => (
             <ol
               className="mb-6 list-outside list-decimal pl-5 [&_ol_li:first-of-type]:mt-1.5 [&_ul_li:first-of-type]:mt-1.5"
               {...cleanedProps(props)}
             />
           ),
-          li: ({ children: c, ...props }) => (
-            <li
-              className={cn(
-                "mb-2 text-muted-foreground leading-loose [&>p]:m-0",
-                markdownProps.li?.className,
-              )}
-              {...cleanedProps(props)}
-            >
-              {c}
-            </li>
+          li: ({ children }) => (
+            <li className="text-base leading-relaxed">{children}</li>
           ),
-          strong(props) {
-            return (
-              <strong className="font-semibold" {...cleanedProps(props)} />
-            );
-          },
+          strong: ({ children }) => (
+            <strong className="font-semibold text-primary">{children}</strong>
+          ),
+          em: ({ children }) => (
+            <em className="italic text-muted-foreground">{children}</em>
+          ),
           img: (_props) => {
             const props = cleanedProps(_props);
             return (
