@@ -46,34 +46,30 @@ export function TokenInfoCard(props: TokenInfo) {
     >
       <div
         className={cn(
-          "bg-card border rounded-lg p-4 flex gap-4 items-center relative",
-          explorerLink && "hover:border-active-border",
+          "bg-card border rounded-lg p-4 flex gap-4 items-center relative hover:border-active-border transition-colors",
+          explorerLink && "cursor-pointer",
         )}
       >
         {/* Left */}
         <TokenIcon
-          className="size-10 rounded-full"
+          className="size-12 rounded-full ring-2 ring-background"
           fallbackComponent={
-            <div className="size-10 rounded-full from-blue-800 to-blue-500 bg-gradient-to-br" />
+            <div className="size-12 rounded-full from-blue-800 to-blue-500 bg-gradient-to-br ring-2 ring-background" />
           }
-          loadingComponent={<Skeleton className="size-10 rounded-full" />}
+          loadingComponent={<Skeleton className="size-12 rounded-full" />}
         />
 
         {/* right */}
-        <div className="flex flex-col gap-1 grow text-sm">
+        <div className="flex flex-col gap-2 grow text-sm">
           {/* Row 1 */}
-          <div
-            className={cn(
-              "gap-2 flex items-center justify-between font-semibold",
-            )}
-          >
-            <h3 className="truncate">
+          <div className="flex items-center justify-between">
+            <h3 className="truncate font-semibold text-base">
               {explorerLink ? (
                 <Link
                   href={explorerLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="before:absolute before:inset-0"
+                  className="before:absolute before:inset-0 hover:text-primary transition-colors"
                 >
                   {tokenName}
                 </Link>
@@ -81,13 +77,19 @@ export function TokenInfoCard(props: TokenInfo) {
                 tokenName
               )}
             </h3>
-            <p>${props.priceUSD}</p>
+            <p className="font-medium text-base">${props.priceUSD}</p>
           </div>
 
           {/* Row 2 */}
-          <div className="gap-3 flex items-center text-xs text-muted-foreground">
-            <p>Market Cap: ${props.marketCapUSD}</p>
-            <p>Volume: ${props.volumeUSD}</p>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <span className="font-medium">MC:</span>
+              <span>${props.marketCapUSD}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="font-medium">Vol:</span>
+              <span>${props.volumeUSD}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -137,66 +139,63 @@ export function WalletInfoCard(props: WalletInfo) {
     <AccountProvider address={props.address} client={thirdwebClient}>
       <div
         className={cn(
-          "bg-card border rounded-lg p-4 flex gap-4 items-center relative",
-          explorerLink && "hover:border-active-border",
+          "bg-card border rounded-lg p-4 flex gap-4 items-center relative hover:border-active-border transition-colors",
+          explorerLink && "cursor-pointer",
         )}
       >
         {/* Left */}
         <AccountAvatar
-          className="size-10 rounded-full"
+          className="size-12 rounded-full ring-2 ring-background"
           fallbackComponent={
-            <div className="size-10 rounded-full from-blue-800 to-blue-500 bg-gradient-to-br" />
+            <div className="size-12 rounded-full from-blue-800 to-blue-500 bg-gradient-to-br ring-2 ring-background" />
           }
-          loadingComponent={<Skeleton className="size-10 rounded-full" />}
+          loadingComponent={<Skeleton className="size-12 rounded-full" />}
         />
 
         {/* right */}
-        <div className="flex flex-col gap-1 grow text-sm">
+        <div className="flex flex-col gap-2 grow text-sm">
           {/* Row 1 */}
-          <div
-            className={cn(
-              "gap-2 flex items-center justify-between font-semibold",
-            )}
-          >
-            <h3 className="truncate">
+          <div className="flex items-center justify-between">
+            <h3 className="truncate font-semibold text-base">
               {explorerLink ? (
                 <Link
                   href={explorerLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="before:absolute before:inset-0"
+                  className="before:absolute before:inset-0 hover:text-primary transition-colors"
                 >
                   {displayName}
                 </Link>
               ) : (
                 displayName
-              )}{" "}
+              )}
             </h3>
-            <p>{props.balanceUSD}</p>
+            <p className="font-medium text-base">{props.balanceUSD}</p>
           </div>
 
           {/* Row 2 */}
-          <div className="gap-3 flex items-center text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              Win rate:{" "}
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <span className="font-medium">Win Rate:</span>
               {walletStatsQuery.data ? (
-                `${walletStatsQuery.data.winrate}%`
+                <span className={walletStatsQuery.data.winrate >= 50 ? "text-green-500" : "text-red-500"}>
+                  {walletStatsQuery.data.winrate}%
+                </span>
               ) : (
                 <Skeleton className="h-3 w-10 inline-block" />
               )}
             </div>
-            <div className="flex items-center gap-2">
-              P&L:{" "}
+            <div className="flex items-center gap-1">
+              <span className="font-medium">P&L:</span>
               {walletStatsQuery.data ? (
-                `${walletStatsQuery.data.combined_pnl_usd.toLocaleString(
-                  "en-US",
-                  {
+                <span className={walletStatsQuery.data.combined_pnl_usd >= 0 ? "text-green-500" : "text-red-500"}>
+                  {walletStatsQuery.data.combined_pnl_usd.toLocaleString("en-US", {
                     style: "currency",
                     currency: "USD",
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
-                  },
-                )}`
+                  })}
+                </span>
               ) : (
                 <Skeleton className="h-3 w-10 inline-block" />
               )}
@@ -217,13 +216,11 @@ export function InputsSection(props: {
   walletInfo: WalletInfo;
 }) {
   return (
-    <section>
-      <h3 className="text-lg font-semibold tracking-tight mb-3">Inputs</h3>
-      <div className="flex flex-col ">
-        <div className="flex flex-col lg:flex-row gap-4 lg:[&>*]:min-w-[400px]">
-          <TokenInfoCard {...props.tokenInfo} />
-          <WalletInfoCard {...props.walletInfo} />
-        </div>
+    <section className="space-y-4">
+      <h3 className="text-lg font-semibold tracking-tight">Inputs</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <TokenInfoCard {...props.tokenInfo} />
+        <WalletInfoCard {...props.walletInfo} />
       </div>
     </section>
   );
