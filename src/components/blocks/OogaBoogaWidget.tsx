@@ -8,11 +8,13 @@ import { Input } from "../ui/input";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseEther, maxUint256, zeroAddress } from "viem";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +25,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 import { RefreshCw } from "lucide-react";
 
 const oogaBoogaChainMap = {
@@ -112,6 +120,7 @@ const RATE_LIMIT_DELAY = 2000; // 2 seconds between API calls
 const PRICE_REFRESH_INTERVAL = 30000; // 30 seconds
 
 export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [priceData, setPriceData] = useState<PriceDisplayData | null>(null);
   const [swapData, setSwapData] = useState<SwapData | null>(null);
@@ -371,135 +380,151 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
     return null;
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-[600px] text-red-500">
-        {error}
-      </div>
-    );
+  const chainId = props.chainId as keyof typeof oogaBoogaChainMap;
+
+  const queryParams = new URLSearchParams({
+    chain: oogaBoogaChainMap[chainId],
+    exactField: "input",
+  });
+
+  if (props.toTokenAddress) {
+    queryParams.set("outputCurrency", props.toTokenAddress);
   }
 
-  if (!isLoaded) {
-    return <LoadingIframe className="absolute inset-0" />;
+  if (props.fromTokenAddress) {
+    queryParams.set("inputCurrency", props.fromTokenAddress);
   }
 
   return (
-    <div className="relative p-6">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Price Information</h3>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={fetchPriceData}
-              disabled={isRefreshing}
-              className="h-8 w-8"
-            >
-              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              Powered by OogaBooga
-            </span>
-          </div>
-        </div>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button 
+          variant="outline" 
+          className="w-full"
+        >
+          Trade
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Swap Tokens</DialogTitle>
+          <DialogDescription>
+            Powered by OogaBooga
+          </DialogDescription>
+        </DialogHeader>
         
-        {priceData && (
-          <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Current Price</p>
-              <p className="text-2xl font-bold">${priceData.price.toFixed(6)}</p>
+        <div className="relative">
+          {error ? (
+            <div className="flex items-center justify-center h-[600px] text-red-500">
+              {error}
             </div>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Swap</h3>
-          <div className="space-y-2">
-            <Input
-              type="number"
-              placeholder="Enter amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full"
-            />
-            {needsApproval ? (
-              <Button
-                onClick={approveToken}
-                className="w-full"
-                disabled={!address || isCheckingAllowance}
-              >
-                Approve Token
-              </Button>
-            ) : (
-              <Button 
-                onClick={fetchSwapData}
-                className="w-full"
-                disabled={!amount || !address || isCheckingAllowance}
-              >
-                Get Swap Quote
-              </Button>
-            )}
-          </div>
-
-          {swapData && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Amount In</p>
-                  <p className="text-xl font-bold">
-                    {(BigInt(swapData.amountIn) / BigInt(10 ** 18)).toString()} 
-                    {props.fromTokenAddress === zeroAddress ? "BERA" : swapData.tokens[0]?.symbol}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Amount Out</p>
-                  <p className="text-xl font-bold">
-                    {(BigInt(swapData.assumedAmountOut) / BigInt(10 ** 18)).toString()} 
-                    {props.toTokenAddress === zeroAddress ? "BERA" : swapData.tokens[1]?.symbol}
-                  </p>
-                </div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Price Impact</p>
-                        <p className={cn(
-                          "text-xl font-bold",
-                          swapData.priceImpact > 0.01 ? "text-red-500" : "text-green-500"
-                        )}>
-                          {(swapData.priceImpact * 100).toFixed(2)}%
-                        </p>
+          ) : (
+            <div className="relative">
+              {!isLoaded && <LoadingIframe className="absolute inset-0" />}
+              <div className={cn("space-y-6", !isLoaded && "invisible")}>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={fetchPriceData}
+                      disabled={isRefreshing}
+                      className="h-8 w-8"
+                    >
+                      <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+                    </Button>
+                    {priceData && (
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">Current Price</p>
+                        <p className="text-lg font-bold">${priceData.price.toFixed(6)}</p>
                       </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Price impact shows how much the price will change due to your trade. Higher impact means worse execution price.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Route</p>
-                  <p className="text-sm">
-                    {swapData.route.map((r, i) => (
-                      <span key={i}>
-                        {i > 0 ? " → " : ""}
-                        {r.poolName} ({(r.share * 100).toFixed(0)}%)
-                      </span>
-                    ))}
-                  </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Input
+                      type="number"
+                      placeholder="Enter amount"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-full"
+                    />
+                    {needsApproval ? (
+                      <Button
+                        onClick={approveToken}
+                        className="w-full"
+                        disabled={!address || isCheckingAllowance}
+                      >
+                        Approve Token
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={handleSwap}
+                        className="w-full"
+                        disabled={!amount || !address || isCheckingAllowance}
+                      >
+                        Swap Tokens
+                      </Button>
+                    )}
+                  </div>
+
+                  {swapData && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">Amount In</p>
+                          <p className="text-xl font-bold">
+                            {(BigInt(swapData.amountIn) / BigInt(10 ** 18)).toString()} 
+                            {props.fromTokenAddress === zeroAddress ? "BERA" : swapData.tokens[0]?.symbol}
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">Amount Out</p>
+                          <p className="text-xl font-bold">
+                            {(BigInt(swapData.assumedAmountOut) / BigInt(10 ** 18)).toString()} 
+                            {props.toTokenAddress === zeroAddress ? "BERA" : swapData.tokens[1]?.symbol}
+                          </p>
+                        </div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">Price Impact</p>
+                                <p className={cn(
+                                  "text-xl font-bold",
+                                  swapData.priceImpact > 0.01 ? "text-red-500" : "text-green-500"
+                                )}>
+                                  {(swapData.priceImpact * 100).toFixed(2)}%
+                                </p>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Price impact shows how much the price will change due to your trade. Higher impact means worse execution price.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">Route</p>
+                          <p className="text-sm">
+                            {swapData.route.map((r, i) => (
+                              <span key={i}>
+                                {i > 0 ? " → " : ""}
+                                {r.poolName} ({(r.share * 100).toFixed(0)}%)
+                              </span>
+                            ))}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-              <Button 
-                onClick={fetchSwapData}
-                className="w-full"
-                disabled={!swapData.tx || swapData.status !== "Success" || isTransactionPending}
-              >
-                {isTransactionPending ? "Transaction Pending..." : "Execute Swap"}
-              </Button>
             </div>
           )}
         </div>
-      </div>
+      </DialogContent>
 
       <AlertDialog open={showSwapConfirmation} onOpenChange={setShowSwapConfirmation}>
         <AlertDialogContent>
@@ -520,7 +545,7 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Dialog>
   );
 }
 
