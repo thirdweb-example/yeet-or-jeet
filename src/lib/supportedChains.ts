@@ -1,5 +1,5 @@
 import type { Chain } from "thirdweb";
-import { base, ethereum } from "thirdweb/chains";
+import { berachain, ethereum } from "thirdweb/chains";
 
-export const supportedChains: Chain[] = [base, ethereum];
-export const defaultSelectedChain = base;
+export const supportedChains: Chain[] = [berachain, ethereum];
+export const defaultSelectedChain = berachain;
