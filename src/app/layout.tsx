@@ -56,10 +56,10 @@ export default function RootLayout({
             <div className="container max-w-6xl mx-auto text-center text-muted-foreground px-5">
               <Link
                 className="text-sm hover:text-foreground"
-                href="https://thirdweb.com/"
+                href="https://livethelife.tv/"
                 target="_blank"
               >
-                Powered by thirdweb
+                Powered by LIVETHELIFE.TV
               </Link>
             </div>
           </footer>
