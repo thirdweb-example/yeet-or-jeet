@@ -113,7 +113,7 @@ function LandingPageScreen(props: {
           <span>the b/era</span>
         </h1>
         <p className="text-xl lg:text-2xl text-muted-foreground font-medium mb-8">
-          THE BERACHAIN TOKEN ANALYZER
+          BERACHAIN TOKEN ANALYZER
         </p>
         {!account && (
           <div className="w-full max-w-sm">
