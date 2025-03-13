@@ -50,10 +50,10 @@ interface TotalStatsResponse {
   data: TotalStats;
 }
 
-const CIELO_API_KEY = process.env.CIELO_API_KEY || "";
+const CIELO_API_KEY = process.env.CIELO_API_KEY;
 
 if (!CIELO_API_KEY) {
-  throw new Error("Missing CIELO_API_KEY environment variable");
+  console.warn("CIELO_API_KEY is not set. Wallet stats and PnL features will be disabled.");
 }
 
 const CIELO_API_BASE = "https://feed-api.cielo.finance/api/v1";
@@ -63,6 +63,11 @@ export async function getWalletStats(
   chain: string,
   timeframe: "1d" | "7d" | "30d" | "max" = "max",
 ): Promise<TotalStats | null> {
+  if (!CIELO_API_KEY) {
+    console.warn("CIELO_API_KEY is not set. Skipping wallet stats fetch.");
+    return null;
+  }
+
   try {
     const params = new URLSearchParams({
       timeframe,
@@ -111,6 +116,11 @@ export async function getTokenPnL(
   chain?: string,
   timeframe: "1d" | "7d" | "30d" | "max" = "max",
 ): Promise<TokenPnL | null> {
+  if (!CIELO_API_KEY) {
+    console.warn("CIELO_API_KEY is not set. Skipping token PnL fetch.");
+    return null;
+  }
+
   try {
     const params = new URLSearchParams({
       timeframe,
