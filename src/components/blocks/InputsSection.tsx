@@ -46,24 +46,24 @@ export function TokenInfoCard(props: TokenInfo) {
     >
       <div
         className={cn(
-          "bg-card border rounded-lg p-4 flex gap-4 items-center relative hover:border-active-border transition-colors",
+          "bg-card border rounded-xl p-6 flex gap-6 items-center relative hover:border-active-border transition-all duration-200 hover:shadow-md",
           explorerLink && "cursor-pointer",
         )}
       >
         {/* Left */}
         <TokenIcon
-          className="size-12 rounded-full ring-2 ring-background"
+          className="size-16 rounded-full ring-2 ring-background shadow-lg"
           fallbackComponent={
-            <div className="size-12 rounded-full from-blue-800 to-blue-500 bg-gradient-to-br ring-2 ring-background" />
+            <div className="size-16 rounded-full from-blue-800 to-blue-500 bg-gradient-to-br ring-2 ring-background shadow-lg" />
           }
-          loadingComponent={<Skeleton className="size-12 rounded-full" />}
+          loadingComponent={<Skeleton className="size-16 rounded-full" />}
         />
 
         {/* right */}
-        <div className="flex flex-col gap-2 grow text-sm">
-          {/* Row 1 */}
+        <div className="flex flex-col gap-3 grow">
+          {/* Row 1 - Token Name and Price */}
           <div className="flex items-center justify-between">
-            <h3 className="truncate font-semibold text-base">
+            <h3 className="truncate font-semibold text-lg">
               {explorerLink ? (
                 <Link
                   href={explorerLink}
@@ -77,18 +77,18 @@ export function TokenInfoCard(props: TokenInfo) {
                 tokenName
               )}
             </h3>
-            <p className="font-medium text-base">${props.priceUSD}</p>
+            <p className="font-bold text-xl text-primary">${props.priceUSD}</p>
           </div>
 
-          {/* Row 2 */}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <span className="font-medium">MC:</span>
-              <span>${props.marketCapUSD}</span>
+          {/* Row 2 - Market Cap and Volume */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Market Cap</p>
+              <p className="text-sm font-semibold">${props.marketCapUSD}</p>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="font-medium">Vol:</span>
-              <span>${props.volumeUSD}</span>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">24h Volume</p>
+              <p className="text-sm font-semibold">${props.volumeUSD}</p>
             </div>
           </div>
         </div>

@@ -308,31 +308,39 @@ function ResponseScreen(props: {
           )}
 
           {detailsSection && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-              <div className="space-y-4 columns-1 md:columns-2">
-                <MarkdownRenderer markdownText={detailsSection.content || ""} />
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold tracking-tight">Detailed Analysis</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <MarkdownRenderer markdownText={detailsSection.content || ""} />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {verdictSection?.actions && verdictSection.actions.length > 0 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-              <h3 className="text-xl font-semibold">Actions</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+              <h3 className="text-xl font-semibold tracking-tight">Recommended Actions</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {verdictSection.actions.map((action) => (
-                  <div key={action.label} className="p-4 rounded-lg border">
-                    <div className="flex-1">
-                      <div className="font-medium">{action.label}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {action.description}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {action.recommendedPercentage}% Recommended
-                      </div>
-                      {action.subtext && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {action.subtext}
+                  <div 
+                    key={action.label} 
+                    className="p-6 rounded-xl border bg-card hover:border-active-border transition-all duration-200 hover:shadow-md"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-lg">{action.label}</h4>
+                        <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                          {action.recommendedPercentage}% Recommended
                         </div>
+                      </div>
+                      <p className="text-muted-foreground">{action.description}</p>
+                      {action.subtext && (
+                        <p className="text-sm text-muted-foreground italic">{action.subtext}</p>
                       )}
                     </div>
                   </div>
