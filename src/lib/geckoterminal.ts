@@ -310,68 +310,122 @@ interface TopToken {
 // Add this new function to fetch top tokens
 export async function getTopTokens(): Promise<TopToken[]> {
   try {
-    // Use the exact network ID from the GeckoTerminal API
-    const network = "berachain"; // Found in the API response
-    console.log("Fetching top tokens on Berachain");
+    const network = "berachain";
+    console.log(`Starting to fetch top tokens on ${network}`);
     
-    // Get top pools by volume
-    const response = await fetchGeckoTerminal(
-      `/networks/${network}/pools?page=1&page_size=20&sort=volume_usd_24h`
+    // First, let's just try to get the network info to verify the network ID
+    try {
+      console.log(`Checking if network ${network} exists`);
+      const networkInfo = await fetchGeckoTerminal(`/networks/${network}`);
+      console.log(`Network info response:`, networkInfo);
+    } catch (error) {
+      console.error(`Failed to fetch network info for ${network}:`, error);
+      // Continue anyway, as we know the pools endpoint works
+    }
+    
+    // Get top pools directly - we know this works from our testing
+    console.log(`Fetching top pools for ${network}`);
+    const poolsResponse = await fetchGeckoTerminal(
+      `/networks/${network}/pools?page=1&page_size=12`
     );
 
-    if (!response?.data) {
+    if (!poolsResponse?.data) {
       throw new Error("No pools found");
     }
-
-    // Extract unique tokens from pools and get their details
-    const uniqueTokens = new Set<string>();
+    
+    console.log(`Found ${poolsResponse.data.length} pools`);
+    
+    // Extract tokens directly from the pools data without making additional API calls
     const tokens: TopToken[] = [];
-
-    for (const pool of response.data) {
-      const baseToken = pool.relationships?.base_token?.data;
-      const quoteToken = pool.relationships?.quote_token?.data;
+    const uniqueTokens = new Map<string, any>(); // Use a Map to store token data
+    
+    // Process pools to extract token information
+    for (const pool of poolsResponse.data) {
+      if (!pool.attributes) continue;
       
-      if (!baseToken || !quoteToken) continue;
-
-      // Extract token addresses
-      for (const token of [baseToken, quoteToken]) {
-        const address = token.id.split('_')[1];
-        if (!uniqueTokens.has(address)) {
-          uniqueTokens.add(address);
-          
-          try {
-            // Get token details - price is included in the token data for Berachain
-            const tokenData = await fetchGeckoTerminal(`/networks/${network}/tokens/${address}`);
-            
-            if (tokenData?.data?.attributes) {
-              const attrs = tokenData.data.attributes;
-              tokens.push({
-                address: address,
-                name: attrs.name || "",
-                symbol: attrs.symbol || "",
-                price_usd: attrs.price_usd || "0",
-                volume_24h: attrs.volume_usd?.h24 || 0,
-                price_change_24h: 0, // Not available in the token data
-                market_cap_usd: attrs.market_cap_usd || attrs.fdv_usd || 0,
-              });
-            }
-          } catch (error) {
-            console.warn(`Failed to fetch data for token ${address}:`, error);
-          }
+      // Extract base token info if available
+      if (pool.relationships?.base_token?.data) {
+        const baseTokenId = pool.relationships.base_token.data.id;
+        const baseTokenAddress = baseTokenId.split('_')[1];
+        
+        // Get price from pool data if available
+        const baseTokenPrice = pool.attributes.base_token_price_usd;
+        
+        if (!uniqueTokens.has(baseTokenAddress)) {
+          uniqueTokens.set(baseTokenAddress, {
+            id: baseTokenId,
+            address: baseTokenAddress,
+            price_usd: baseTokenPrice || "0",
+            volume_24h: pool.attributes.volume_usd?.h24 || 0
+          });
         }
       }
-
-      // Limit to top 12 tokens
+      
+      // Extract quote token info if available
+      if (pool.relationships?.quote_token?.data) {
+        const quoteTokenId = pool.relationships.quote_token.data.id;
+        const quoteTokenAddress = quoteTokenId.split('_')[1];
+        
+        // Get price from pool data if available
+        const quoteTokenPrice = pool.attributes.quote_token_price_usd;
+        
+        if (!uniqueTokens.has(quoteTokenAddress)) {
+          uniqueTokens.set(quoteTokenAddress, {
+            id: quoteTokenId,
+            address: quoteTokenAddress,
+            price_usd: quoteTokenPrice || "0",
+            volume_24h: pool.attributes.volume_usd?.h24 || 0
+          });
+        }
+      }
+    }
+    
+    console.log(`Found ${uniqueTokens.size} unique tokens from pools`);
+    
+    // Now fetch details for each token one by one
+    for (const [address, tokenInfo] of uniqueTokens.entries()) {
+      try {
+        console.log(`Fetching details for token ${address}`);
+        const tokenData = await fetchGeckoTerminal(`/networks/${network}/tokens/${address}`);
+        
+        if (tokenData?.data?.attributes) {
+          const attrs = tokenData.data.attributes;
+          tokens.push({
+            address: address,
+            name: attrs.name || "Unknown",
+            symbol: attrs.symbol || "???",
+            price_usd: attrs.price_usd || tokenInfo.price_usd || "0",
+            volume_24h: attrs.volume_usd?.h24 || tokenInfo.volume_24h || 0,
+            price_change_24h: 0, // Not available
+            market_cap_usd: attrs.market_cap_usd || attrs.fdv_usd || 0
+          });
+          console.log(`Successfully added token ${attrs.symbol || "Unknown"}`);
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch data for token ${address}:`, error);
+        // Add token with minimal info we have from the pool
+        tokens.push({
+          address: address,
+          name: "Unknown",
+          symbol: "???",
+          price_usd: tokenInfo.price_usd || "0",
+          volume_24h: tokenInfo.volume_24h || 0,
+          price_change_24h: 0,
+          market_cap_usd: 0
+        });
+      }
+      
+      // Limit to 12 tokens
       if (tokens.length >= 12) break;
     }
-
+    
     // Sort by volume
     tokens.sort((a, b) => b.volume_24h - a.volume_24h);
-
-    console.log("Found top tokens:", tokens);
+    
+    console.log(`Returning ${tokens.length} top tokens`);
     return tokens;
   } catch (error) {
-    console.error("Error fetching top tokens:", error);
+    console.error("Error in getTopTokens:", error);
     throw error;
   }
 }
