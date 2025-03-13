@@ -129,12 +129,12 @@ function LandingPageScreen(props: {
     <main className="grow flex flex-col">
       <div className="flex-grow flex flex-col items-center justify-center p-6">
         <h1 className="text-6xl lg:text-8xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-t dark:bg-gradient-to-b from-foreground to-foreground/70 tracking-tight inline-flex gap-2 lg:gap-3 items-center">
-          <span>Yeet</span>
+          <span>This is the</span>
           <span className="italic font-bold ml-1">or</span>
-          <span>Jeet</span>
+          <span>b/era</span>
         </h1>
         <p className="text-xl lg: mb-16 text-muted-foreground font-medium">
-          Instant Trading Decisions
+          NFA. DYOR. AI-assisted? 1/ WHAT.
         </p>
 
         <TokenForm

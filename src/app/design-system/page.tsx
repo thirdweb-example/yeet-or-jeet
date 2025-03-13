@@ -155,7 +155,7 @@ export default function StyleguidePage() {
 
         <TradeSummarySection
           variant="sell"
-          title="Jeet 20% of your VVV"
+          title="DCA OUT 20% of your VVV"
           description="Sell $500 at 24.32% profit"
           tokenAddress="0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf"
           chainId={8453}
@@ -163,7 +163,7 @@ export default function StyleguidePage() {
 
         <TradeSummarySection
           variant="buy"
-          title="Yeet $3.2k into VVV"
+          title="DCA IN $3.2k into VVV"
           description="Buy ~$3.2k at $62.3m MC"
           tokenAddress="0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf"
           chainId={8453}

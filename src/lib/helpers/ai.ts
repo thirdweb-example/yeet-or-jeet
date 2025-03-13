@@ -293,7 +293,7 @@ Token-Specific Performance:
 
   const userContext = `${walletContext}\n${tokenContext}`.trim();
 
-  const claudeSystemPrompt = `You are YeetorJeet's lead analyst focused on making immediate Yeet (buy), Jeet (sell), or Hodl (hold) decisions. Your primary goal is to provide personalized recommendations based on the user's current position and trading history with this token.
+  const claudeSystemPrompt = `You are the lead analyst focused on making immediate DCA IN (buy), DCA OUT (sell), or Hodl (hold) decisions. Your primary goal is to provide personalized recommendations based on the user's current position and trading history with this token.
 
 IMPORTANT - User's Current Position:
 ${tokenContext || "No position data available"}
@@ -397,9 +397,9 @@ You must respond with a JSON object using this exact structure:
           ? '"buy" | "sell" | "hold"'
           : '"buy" | "hold"'
       }, // Only suggest sell if user has a position
-      "title": "string", // e.g. "Yeet $3.2k into VVV", be specific with your amount if possible and make sure if it's a sell it's less than the user has. Can also be in a hold/sell position "Don't buy VVV". Max 24 chars
+      "title": "string", // e.g. "DCA IN $3.2k into VVV", be specific with your amount if possible and make sure if it's a sell it's less than the user has. Can also be in a hold/sell position "Don't buy VVV". Max 24 chars
       "description": "string", // e.g. "Buy ~$3.2k at $62.3m MC", a more straightforward and informed way to say the same thing as title. Max 30 chars
-      "summary": "string", // e.g. "Yeet (buy) 20% of your portfolio into VVV"
+      "summary": "string", // e.g. "DCA IN (buy) 20% of your portfolio into VVV"
       "actions": [
         {
           "label": "string",

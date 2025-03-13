@@ -1,6 +1,6 @@
-# Yeet or Jeet
+# This is the b/era
 
-A DeFi trading assistant powered by AI that helps you make informed decisions about when to buy (Yeet) or sell (Jeet) tokens on Berachain.
+A DeFi trading assistant powered by AI that helps you make informed decisions about when to buy (DCA IN) or sell DCA OUT) tokens on Berachain.
 
 ## Features
 

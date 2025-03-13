@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Yeet or Jeet",
-  description: "Instant Trading Decisions",
+  title: "This is the b/era",
+  description: "NFA. DYOR",
 };
 
 export default function RootLayout({
