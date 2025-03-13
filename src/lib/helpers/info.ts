@@ -4,7 +4,7 @@ import { calculateGrowthScore } from "./growth-score";
 import { getHourlyTransferCount, type TransferCount } from "./insight";
 import { getTokenInfo, type DexScreenerToken } from "../../lib/dexscreener";
 import { supportedChains } from "../../lib/supportedChains";
-import { formatUnits, parseAbi } from "viem";
+import { formatUnits } from "viem";
 
 export type StartingData = {
   contractABI?: string;
