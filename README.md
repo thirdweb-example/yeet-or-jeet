@@ -10,11 +10,11 @@ A DeFi trading assistant powered by AI that helps you make informed decisions ab
   - Access token social links and websites
   - View token descriptions and trust scores
   - One-click token selection for analysis
+  - Automatic filtering of stablecoins for more relevant analysis
 
 - **Real-time Price Data**: Integrated with multiple data sources for accurate and up-to-date token information
-  - DexScreener API for comprehensive DEX trading data
-  - GeckoTerminal API for token metadata
-  - OogaBooga's Price API for accurate price information
+  - GeckoTerminal API as primary data source for comprehensive token information
+  - DexScreener API as fallback for token data when GeckoTerminal is unavailable
   - Current price in USD
   - Price updates in real-time
   - Support for all whitelisted tokens on Berachain
@@ -29,11 +29,29 @@ A DeFi trading assistant powered by AI that helps you make informed decisions ab
 
 ## Technical Integration
 
-### DexScreener API
+### GeckoTerminal API (Primary Data Source)
 
-The application integrates with DexScreener's API to provide real-time DEX trading data:
+The application primarily integrates with GeckoTerminal's API to provide comprehensive token data:
 
 - **Token Discovery**: Fetches top tokens by volume on Berachain directly from DEXs
+  - Automatically filters out stablecoins for more relevant analysis
+  - Dynamically discovers tokens based on actual trading activity
+  - Sorts tokens by 24-hour trading volume
+- **Token Metadata**: Retrieves detailed information about tokens
+  - Token logos and images
+  - Social media links (Twitter, Telegram, Website)
+  - Token descriptions
+  - GeckoTerminal trust scores
+  - Market data (price, volume, market cap)
+- **Pool Data**: Extracts token information from trading pools
+  - Price and volume data from actual DEX trades
+  - Liquidity information
+  - Price change percentages
+
+### DexScreener API (Fallback Data Source)
+
+The application also integrates with DexScreener's API as a fallback when GeckoTerminal data is unavailable:
+
 - **Pair Data**: Retrieves detailed information about trading pairs
   - Price and volume data from actual DEX trades
   - Liquidity information
@@ -42,17 +60,6 @@ The application integrates with DexScreener's API to provide real-time DEX tradi
   - Token addresses, names, and symbols
   - Social links when available
   - Trust scores
-
-### GeckoTerminal API
-
-The application also integrates with GeckoTerminal's API as a secondary data source:
-
-- **Token Metadata**: Retrieves detailed information about tokens
-  - Token logos and images
-  - Social media links (Twitter, Telegram, Website)
-  - Token descriptions
-  - GeckoTerminal trust scores
-  - Market data (price, volume, market cap)
 
 ### OogaBooga Aggregator
 

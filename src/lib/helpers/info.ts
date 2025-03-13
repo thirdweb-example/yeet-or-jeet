@@ -59,7 +59,7 @@ export const gatherStartingData = async (
     }
 
     // Convert null to undefined for type compatibility
-    let dexScreenerData = dexScreenerTokenInfo || undefined;
+    const dexScreenerData = dexScreenerTokenInfo || undefined;
 
     // Log what data we have
     console.log("Data gathering results:", {

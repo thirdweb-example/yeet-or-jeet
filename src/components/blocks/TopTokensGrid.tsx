@@ -108,7 +108,7 @@ export function TopTokensGrid({ onTokenSelect }: { onTokenSelect: (address: stri
         <AlertCircleIcon className="size-12 mb-4 opacity-60" />
         <h3 className="text-lg font-semibold mb-2">No Tokens Found</h3>
         <p className="mb-4">
-          We couldn't find any non-stablecoin tokens with sufficient trading volume.
+          We couldn&apos;t find any non-stablecoin tokens with sufficient trading volume.
           <br />
           This could be due to API limitations or network issues.
         </p>

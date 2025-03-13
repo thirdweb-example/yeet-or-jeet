@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const DEXSCREENER_BASE_URL = "https://api.dexscreener.com/latest/dex";
 
 // Interface for token data returned by DexScreener

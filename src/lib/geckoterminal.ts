@@ -435,7 +435,7 @@ export async function getTopTokens(): Promise<TopToken[]> {
     const tokens: TopToken[] = [];
     
     // Convert map to array and sort by volume
-    let tokenArray = Array.from(tokenMap.values());
+    const tokenArray = Array.from(tokenMap.values());
     tokenArray.sort((a, b) => b.volume_24h - a.volume_24h);
     
     // Take top 20 tokens by volume to enrich with additional data
