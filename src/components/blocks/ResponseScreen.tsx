@@ -58,7 +58,7 @@ export function ResponseScreen({ response, startingData }: ResponseScreenProps):
     setTokenBalance(token);
   }, []);
 
-  // Find the details section from the response
+  // Use response sections for rendering
   const detailsSection = response.sections.find(section => section.section === 'details');
   const verdictSection = response.sections.find(section => section.section === 'verdict');
 
@@ -90,9 +90,7 @@ export function ResponseScreen({ response, startingData }: ResponseScreenProps):
         </div>
       )}
       {detailsSection?.content && (
-        <div className="prose prose-invert max-w-none">
-          {detailsSection.content}
-        </div>
+        <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: detailsSection.content }} />
       )}
     </div>
   );
