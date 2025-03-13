@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { UniswapWidget } from "../UniswapWidget";
+import { OogaBoogaWidget } from "../OogaBoogaWidget";
 import { Button } from "../../ui/button";
 
 const variantImageMap = {
@@ -64,7 +64,7 @@ export function TradeSummarySection(props: {
                   <DialogTitle className="px-6 py-4">Trade</DialogTitle>
                 </DialogHeader>
                 {props.variant === "buy" || props.variant === "sell" ? (
-                  <UniswapWidget
+                  <OogaBoogaWidget
                     chainId={props.chainId}
                     toTokenAddress={
                       props.variant === "buy" ? props.tokenAddress : undefined
@@ -75,7 +75,7 @@ export function TradeSummarySection(props: {
                   />
                 ) : (
                   // If AI doesn't have a clear verdict - prefill the token for "buying"
-                  <UniswapWidget
+                  <OogaBoogaWidget
                     chainId={props.chainId}
                     toTokenAddress="0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf"
                     fromTokenAddress={props.tokenAddress}
