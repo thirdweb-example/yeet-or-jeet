@@ -296,7 +296,7 @@ export const fetchPoolInfo = async (
   return poolInfo;
 };
 
-// Add this interface near the other interfaces
+// Update the TopToken interface to include the additional metadata
 interface TopToken {
   address: string;
   name: string;
@@ -305,6 +305,15 @@ interface TopToken {
   volume_24h: number;
   price_change_24h: number;
   market_cap_usd: number;
+  // Additional metadata from the /info endpoint
+  image_url?: string;
+  description?: string;
+  websites?: string[];
+  discord_url?: string;
+  telegram_handle?: string;
+  twitter_handle?: string;
+  categories?: string[];
+  gt_score?: number;
 }
 
 // Add this new function to fetch top tokens
@@ -405,7 +414,8 @@ export async function getTopTokens(): Promise<TopToken[]> {
           const attrs = tokenData.data.attributes;
           const existingData = tokenMap.get(normalizedAddress) || {};
           
-          tokens.push({
+          // Create base token data
+          const tokenInfo: TopToken = {
             address: normalizedAddress,
             name: attrs.name || "Unknown",
             symbol: attrs.symbol || "???",
@@ -413,8 +423,34 @@ export async function getTopTokens(): Promise<TopToken[]> {
             volume_24h: attrs.volume_usd?.h24 || existingData.volume_24h || 0,
             price_change_24h: 0, // Not available in token data
             market_cap_usd: attrs.market_cap_usd || attrs.fdv_usd || 0
-          });
+          };
           
+          // Try to get additional info from the /info endpoint
+          try {
+            console.log(`Fetching additional info for token ${normalizedAddress}`);
+            const infoData = await fetchGeckoTerminal(`/networks/berachain/tokens/${normalizedAddress}/info`);
+            
+            if (infoData?.data?.attributes) {
+              const infoAttrs = infoData.data.attributes;
+              
+              // Enrich token data with additional metadata
+              tokenInfo.image_url = infoAttrs.image_url;
+              tokenInfo.description = infoAttrs.description;
+              tokenInfo.websites = infoAttrs.websites;
+              tokenInfo.discord_url = infoAttrs.discord_url;
+              tokenInfo.telegram_handle = infoAttrs.telegram_handle;
+              tokenInfo.twitter_handle = infoAttrs.twitter_handle;
+              tokenInfo.categories = infoAttrs.categories;
+              tokenInfo.gt_score = infoAttrs.gt_score;
+              
+              console.log(`Successfully enriched token ${attrs.symbol || "Unknown"} with additional metadata`);
+            }
+          } catch (infoError) {
+            console.warn(`Failed to fetch additional info for token ${normalizedAddress}:`, infoError);
+            // Continue with the basic token data we have
+          }
+          
+          tokens.push(tokenInfo);
           console.log(`Successfully added token ${attrs.symbol || "Unknown"}`);
         }
       } catch (error) {
@@ -473,7 +509,8 @@ export async function getTopTokens(): Promise<TopToken[]> {
           if (tokenData?.data?.attributes) {
             const attrs = tokenData.data.attributes;
             
-            tokens.push({
+            // Create base token data
+            const tokenInfo: TopToken = {
               address,
               name: attrs.name || "Unknown",
               symbol: attrs.symbol || "???",
@@ -481,8 +518,34 @@ export async function getTopTokens(): Promise<TopToken[]> {
               volume_24h: attrs.volume_usd?.h24 || data.volume_24h || 0,
               price_change_24h: 0,
               market_cap_usd: attrs.market_cap_usd || attrs.fdv_usd || 0
-            });
+            };
             
+            // Try to get additional info from the /info endpoint
+            try {
+              console.log(`Fetching additional info for token ${address}`);
+              const infoData = await fetchGeckoTerminal(`/networks/berachain/tokens/${address}/info`);
+              
+              if (infoData?.data?.attributes) {
+                const infoAttrs = infoData.data.attributes;
+                
+                // Enrich token data with additional metadata
+                tokenInfo.image_url = infoAttrs.image_url;
+                tokenInfo.description = infoAttrs.description;
+                tokenInfo.websites = infoAttrs.websites;
+                tokenInfo.discord_url = infoAttrs.discord_url;
+                tokenInfo.telegram_handle = infoAttrs.telegram_handle;
+                tokenInfo.twitter_handle = infoAttrs.twitter_handle;
+                tokenInfo.categories = infoAttrs.categories;
+                tokenInfo.gt_score = infoAttrs.gt_score;
+                
+                console.log(`Successfully enriched token ${attrs.symbol || "Unknown"} with additional metadata`);
+              }
+            } catch (infoError) {
+              console.warn(`Failed to fetch additional info for token ${address}:`, infoError);
+              // Continue with the basic token data we have
+            }
+            
+            tokens.push(tokenInfo);
             console.log(`Added additional token ${attrs.symbol || "Unknown"}`);
           }
         } catch (error) {
