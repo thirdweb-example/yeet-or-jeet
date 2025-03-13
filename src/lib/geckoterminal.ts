@@ -340,19 +340,19 @@ export async function getTopTokens(): Promise<TopToken[]> {
           uniqueTokens.add(address);
           
           try {
-            // Get token details
+            // Get token details - price is included in the token data for Berachain
             const tokenData = await fetchGeckoTerminal(`/networks/${network}/tokens/${address}`);
-            const priceData = await fetchGeckoTerminal(`/networks/${network}/tokens/${address}/price`);
             
-            if (tokenData?.data?.attributes && priceData?.data?.attributes) {
+            if (tokenData?.data?.attributes) {
+              const attrs = tokenData.data.attributes;
               tokens.push({
                 address: address,
-                name: tokenData.data.attributes.name || "",
-                symbol: tokenData.data.attributes.symbol || "",
-                price_usd: priceData.data.attributes.price_usd || "0",
-                volume_24h: priceData.data.attributes.volume_24h || 0,
-                price_change_24h: priceData.data.attributes.price_change_24h || 0,
-                market_cap_usd: priceData.data.attributes.market_cap_usd || 0,
+                name: attrs.name || "",
+                symbol: attrs.symbol || "",
+                price_usd: attrs.price_usd || "0",
+                volume_24h: attrs.volume_usd?.h24 || 0,
+                price_change_24h: 0, // Not available in the token data
+                market_cap_usd: attrs.market_cap_usd || attrs.fdv_usd || 0,
               });
             }
           } catch (error) {
