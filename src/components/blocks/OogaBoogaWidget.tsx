@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "../../lib/utils";
-import { Button } from "../ui/button";
 import { zeroAddress } from "viem";
 
 const oogaBoogaChainMap = {
@@ -21,41 +20,30 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
     return null;
   }
 
-  const handleTrade = () => {
-    const params = new URLSearchParams();
+  const params = new URLSearchParams();
     
-    // Add fromToken parameter if provided, otherwise use native token (BERA)
-    if (props.fromTokenAddress && props.fromTokenAddress !== zeroAddress) {
-      params.set("fromToken", props.fromTokenAddress.toUpperCase());
-    } else {
-      params.set("fromToken", "0X0000000000000000000000000000000000000000");
-    }
+  // Add fromToken parameter if provided, otherwise use native token (BERA)
+  if (props.fromTokenAddress && props.fromTokenAddress !== zeroAddress) {
+    params.set("fromToken", props.fromTokenAddress.toUpperCase());
+  } else {
+    params.set("fromToken", "0X0000000000000000000000000000000000000000");
+  }
     
-    // Add toToken parameter if provided
-    if (props.toTokenAddress) {
-      params.set("toToken", props.toTokenAddress.toUpperCase());
-    }
+  // Add toToken parameter if provided
+  if (props.toTokenAddress) {
+    params.set("toToken", props.toTokenAddress.toUpperCase());
+  }
 
-    // Open OogaBooga in a popup window
-    const width = 500;
-    const height = 700;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-
-    window.open(
-      `https://app.oogabooga.io/?${params.toString()}`,
-      "OogaBooga Swap",
-      `width=${width},height=${height},left=${left},top=${top},location=yes,status=no,scrollbars=yes`
-    );
-  };
+  const oogaBoogaUrl = `https://app.oogabooga.io/?${params.toString()}`;
 
   return (
-    <Button 
-      variant="outline" 
-      className={cn("w-full", props.className)}
-      onClick={handleTrade}
-    >
-      Trade
-    </Button>
+    <div className={cn("w-full h-[800px] rounded-lg overflow-hidden border border-border", props.className)}>
+      <iframe
+        src={oogaBoogaUrl}
+        className="w-full h-full"
+        allow="clipboard-write; web3-storage; web3; clipboard-read; clipboard-write"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+      />
+    </div>
   );
 } 
