@@ -124,7 +124,23 @@ export function TopTokensGrid({ onTokenSelect }: { onTokenSelect: (address: stri
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {topTokensQuery.data.map((token: TopToken) => (
+      {topTokensQuery.data
+        .filter((token: TopToken) => {
+          // Filter out tokens with volume below $100K
+          if (token.volume_24h < 100000) {
+            console.log(`Filtering out token with low volume: ${token.symbol}, volume: $${token.volume_24h.toLocaleString()}`);
+            return false;
+          }
+          
+          // Filter out specific tokens like HONEY and MOOLA
+          if (token.symbol === 'HONEY' || token.symbol === 'MOOLA' || token.symbol === 'MO') {
+            console.log(`Filtering out specific token: ${token.symbol}`);
+            return false;
+          }
+          
+          return true;
+        })
+        .map((token: TopToken) => (
         <TokenProvider
           key={token.address}
           address={token.address}

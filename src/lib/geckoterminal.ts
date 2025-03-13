@@ -322,15 +322,36 @@ export interface TopToken {
 function isStablecoin(symbol: string, address?: string): boolean {
   if (!symbol && !address) return false;
   
-  // Specific stablecoin addresses to exclude from the homepage
-  const stablecoinAddresses = [
+  // Specific token addresses to exclude from the homepage
+  const excludedAddresses = [
     '0x1ce0a25d13ce4d52071ae7e02cf1f6606f4c79d3', // NECT
     '0x211cc4dd073734da055fbf44a2b4667d5e5fe5d2', // sUSD.e
     '0x2840f9d9f96321435ab0f977e7fdbf32ea8b304f', // sUSDa
+    '0x9c39809dec7f95f5e0713634a4d0701329b3b4d2', // HONEY
+    '0x4f6f57446c0e81a69d0afbd6d1f8e4b6c3b4b5e6', // MOOLA (placeholder)
   ];
   
-  // Check if the address matches any known stablecoin address
-  if (address && stablecoinAddresses.includes(address.toLowerCase())) {
+  // Additional check for specific tokens from the screenshot
+  if (address) {
+    const lowerAddress = address.toLowerCase();
+    // Check for Moola token from the screenshot
+    if (lowerAddress.includes('moola') || symbol?.toUpperCase() === 'MOOLA' || symbol?.toUpperCase() === 'MO') {
+      return true;
+    }
+  }
+  
+  // Check if the address matches any known excluded address
+  if (address && excludedAddresses.includes(address.toLowerCase())) {
+    return true;
+  }
+  
+  // Check for specific tokens with very low volume that should be excluded
+  // This is a special case for tokens like Moola that have extremely low volume
+  if (symbol && (
+    symbol.toUpperCase() === 'MOOLA' || 
+    symbol.toUpperCase() === 'MO' || 
+    symbol.toUpperCase() === 'MOOLA'
+  )) {
     return true;
   }
   
@@ -342,7 +363,7 @@ function isStablecoin(symbol: string, address?: string): boolean {
     'EURT', 'EURS', 'EUROC', 'EURU', 'JEUR', 'SEUR',
     'CADC', 'XSGD', 'XIDR', 'NZDS', 'TRYB', 'BIDR', 'BRLC', 'CNHT', 'IDRT', 'KRWB',
     'MIM', 'USDM', 'USDS', 'USDE', 'USDEX', 'USDFL', 'USDQ', 'USDG', 'USDTG',
-    'NECT', 'SUSD.E', 'SUSDA' // Add the specific stablecoins
+    'NECT', 'SUSD.E', 'SUSDA', 'HONEY', 'MOOLA' // Add MOOLA to the list of tokens to exclude
   ];
   
   // Check if the symbol contains any of the stablecoin identifiers
@@ -411,6 +432,12 @@ export async function getTopTokens(): Promise<TopToken[]> {
           continue;
         }
         
+        // Skip specific tokens like MOOLA
+        if (baseTokenSymbol === 'MOOLA' || baseTokenSymbol === 'MO' || baseTokenSymbol === 'HONEY') {
+          console.log(`Skipping specific token: ${baseTokenSymbol}`);
+          continue;
+        }
+        
         // Update token info if we have a price
         if (baseTokenPrice && !tokenMap.has(baseTokenAddress)) {
           tokenMap.set(baseTokenAddress, {
@@ -447,6 +474,12 @@ export async function getTopTokens(): Promise<TopToken[]> {
           continue;
         }
         
+        // Skip specific tokens like MOOLA
+        if (quoteTokenSymbol === 'MOOLA' || quoteTokenSymbol === 'MO' || quoteTokenSymbol === 'HONEY') {
+          console.log(`Skipping specific token: ${quoteTokenSymbol}`);
+          continue;
+        }
+        
         // Update token info if we have a price
         if (quoteTokenPrice && !tokenMap.has(quoteTokenAddress)) {
           tokenMap.set(quoteTokenAddress, {
@@ -478,18 +511,24 @@ export async function getTopTokens(): Promise<TopToken[]> {
     for (const tokenData of topTokensByVolume) {
       const address = tokenData.address;
       
+      // Skip tokens with volume below $100K
+      if (tokenData.volume_24h < 100000) {
+        console.log(`Skipping token with low volume: ${tokenData.symbol} (${address}), volume: $${tokenData.volume_24h.toLocaleString()}`);
+        continue;
+      }
+      
+      // Skip stablecoins
+      if (isStablecoin(tokenData.symbol, address)) {
+        console.log(`Skipping stablecoin: ${tokenData.symbol} (${address})`);
+        continue;
+      }
+      
       try {
         console.log(`Fetching data for token ${address}`);
         const tokenResponse = await fetchGeckoTerminal(`/networks/berachain/tokens/${address}`);
         
         if (tokenResponse?.data?.attributes) {
           const attrs = tokenResponse.data.attributes;
-          
-          // Skip stablecoins (double check)
-          if (isStablecoin(attrs.symbol, address)) {
-            console.log(`Skipping stablecoin: ${attrs.symbol}`);
-            continue;
-          }
           
           // Create base token data
           const tokenInfo: TopToken = {
@@ -565,7 +604,21 @@ export async function getTopTokens(): Promise<TopToken[]> {
     tokens.sort((a, b) => b.volume_24h - a.volume_24h);
     
     // Filter out tokens with volume below $100K
-    const filteredTokens = tokens.filter(token => token.volume_24h >= 100000);
+    const filteredTokens = tokens.filter(token => {
+      const hasEnoughVolume = token.volume_24h >= 100000;
+      const isNotStablecoin = !isStablecoin(token.symbol, token.address);
+      
+      // Log tokens that are being filtered out
+      if (!hasEnoughVolume) {
+        console.log(`Filtering out token with low volume: ${token.symbol} (${token.address}), volume: $${token.volume_24h.toLocaleString()}`);
+      }
+      
+      if (!isNotStablecoin) {
+        console.log(`Filtering out stablecoin: ${token.symbol} (${token.address})`);
+      }
+      
+      return hasEnoughVolume && isNotStablecoin;
+    });
     
     // Limit to 12 tokens
     const result = filteredTokens.slice(0, 12);
@@ -585,8 +638,8 @@ export async function getTopTokens(): Promise<TopToken[]> {
  * Returns a list of hardcoded tokens as a fallback when APIs fail
  */
 function getHardcodedTokens(): TopToken[] {
-  // Only include hardcoded tokens with volume >= $100K
-  return [
+  // Define hardcoded tokens
+  const hardcodedTokens = [
     {
       address: "0x6536cEAD649249cae42FC9bfb1F999429b3ec755",
       name: "Navigator",
@@ -678,4 +731,20 @@ function getHardcodedTokens(): TopToken[] {
       market_cap_usd: 8500000
     }
   ];
+  
+  // Filter out stablecoins and tokens with volume below $100K
+  return hardcodedTokens.filter(token => {
+    const hasEnoughVolume = token.volume_24h >= 100000;
+    const isNotStablecoin = !isStablecoin(token.symbol, token.address);
+    
+    if (!hasEnoughVolume) {
+      console.log(`Filtering out hardcoded token with low volume: ${token.symbol}, volume: $${token.volume_24h.toLocaleString()}`);
+    }
+    
+    if (!isNotStablecoin) {
+      console.log(`Filtering out hardcoded stablecoin: ${token.symbol}`);
+    }
+    
+    return hasEnoughVolume && isNotStablecoin;
+  });
 }
