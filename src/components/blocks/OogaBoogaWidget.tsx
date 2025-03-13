@@ -27,18 +27,58 @@ const getApiBaseUrl = (chainId: number) => {
 };
 
 interface SwapData {
-  pathDefinition: string;
-  executor: string;
+  status: string;
+  blockNumber: number;
+  tokenFrom: number;
+  tokenTo: number;
+  price: number;
+  priceImpact: number;
+  tokens: Array<{
+    address: string;
+    name: string;
+    symbol: string;
+    decimals: number;
+  }>;
   amountIn: string;
-  amountOut: string;
-  priceImpact: string;
-  gasEstimate: string;
+  amountOutFee: string;
+  assumedAmountOut: string;
+  route: Array<{
+    poolAddress: string;
+    poolType: string;
+    poolName: string;
+    liquiditySource: string;
+    poolFee: number;
+    tokenFrom: number;
+    tokenTo: number;
+    share: number;
+    assumedAmountIn: string;
+    assumedAmountOut: string;
+  }>;
   tx: {
-    from: string;
     to: string;
     data: string;
     value?: string;
   };
+  routerAddr: string;
+  routerParams: {
+    swapTokenInfo: {
+      inputToken: string;
+      inputAmount: string;
+      outputToken: string;
+      outputQuote: string;
+      outputMin: string;
+      outputReceiver: string;
+    };
+    pathDefinition: string;
+    executor: string;
+    referralCode: number;
+    value: string;
+  };
+}
+
+interface PriceData {
+  address: string;
+  price: number;
 }
 
 type OogaBoogaWidgetProps = {
@@ -144,9 +184,8 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
           return;
         }
 
-        const tokenAddress = props.toTokenAddress || props.fromTokenAddress;
         const response = await fetch(
-          `${baseUrl}/v1/price/${props.chainId}/${tokenAddress}`,
+          `${baseUrl}/v1/prices?currency=USD`,
           {
             headers: {
               Authorization: `Bearer ${OOGABOOGA_API_KEY}`,
@@ -158,8 +197,18 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
           throw new Error("Failed to fetch price data");
         }
 
-        const data = await response.json();
-        setPriceData(data);
+        const data: PriceData[] = await response.json();
+        const tokenAddress = props.toTokenAddress || props.fromTokenAddress;
+        const tokenPrice = data.find(p => p.address === tokenAddress);
+        
+        if (tokenPrice) {
+          setPriceData({
+            price: tokenPrice.price,
+            // Note: 24h change, volume, and market cap are not provided by the API
+            // We'll need to fetch these from another source if needed
+          });
+        }
+        
         setIsLoaded(true);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load price data");
@@ -213,21 +262,51 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
   const { writeContract } = useWriteContract();
 
   const handleSwap = async () => {
-    if (!swapData?.tx) return;
+    if (!swapData?.tx || !swapData.routerParams) return;
 
     try {
       await writeContract({
-        address: swapData.tx.to as `0x${string}`,
+        address: swapData.routerAddr as `0x${string}`,
         abi: [{
-          name: "execute",
+          name: "swap",
           type: "function",
           stateMutability: "payable",
-          inputs: [{ name: "pathDefinition", type: "bytes" }],
-          outputs: [],
+          inputs: [
+            {
+              components: [
+                { name: "inputToken", type: "address" },
+                { name: "inputAmount", type: "uint256" },
+                { name: "outputToken", type: "address" },
+                { name: "outputQuote", type: "uint256" },
+                { name: "outputMin", type: "uint256" },
+                { name: "outputReceiver", type: "address" }
+              ],
+              name: "swapTokenInfo",
+              type: "tuple"
+            },
+            { name: "pathDefinition", type: "bytes" },
+            { name: "executor", type: "address" },
+            { name: "referralCode", type: "uint256" }
+          ],
+          outputs: [
+            { name: "outputAmount", type: "uint256" }
+          ]
         }],
-        functionName: "execute",
-        args: [swapData.tx.data as `0x${string}`],
-        value: swapData.tx.value ? BigInt(swapData.tx.value) : BigInt(0),
+        functionName: "swap",
+        args: [
+          {
+            inputToken: swapData.routerParams.swapTokenInfo.inputToken as `0x${string}`,
+            inputAmount: BigInt(swapData.routerParams.swapTokenInfo.inputAmount),
+            outputToken: swapData.routerParams.swapTokenInfo.outputToken as `0x${string}`,
+            outputQuote: BigInt(swapData.routerParams.swapTokenInfo.outputQuote),
+            outputMin: BigInt(swapData.routerParams.swapTokenInfo.outputMin),
+            outputReceiver: swapData.routerParams.swapTokenInfo.outputReceiver as `0x${string}`
+          },
+          swapData.routerParams.pathDefinition as `0x${string}`,
+          swapData.routerParams.executor as `0x${string}`,
+          BigInt(swapData.routerParams.referralCode)
+        ],
+        value: BigInt(swapData.routerParams.value),
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to execute swap");
@@ -262,27 +341,10 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
         </div>
         
         {priceData && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Current Price</p>
-              <p className="text-2xl font-bold">${priceData.price}</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">24h Change</p>
-              <p className={cn(
-                "text-2xl font-bold",
-                priceData.priceChange24h > 0 ? "text-green-500" : "text-red-500"
-              )}>
-                {priceData.priceChange24h > 0 ? "+" : ""}{priceData.priceChange24h}%
-              </p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">24h Volume</p>
-              <p className="text-2xl font-bold">${priceData.volume24h}</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Market Cap</p>
-              <p className="text-2xl font-bold">${priceData.marketCap}</p>
+              <p className="text-2xl font-bold">${priceData.price.toFixed(6)}</p>
             </div>
           </div>
         )}
@@ -321,25 +383,38 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Amount In</p>
-                  <p className="text-xl font-bold">{amount} {props.fromTokenAddress === zeroAddress ? "BERA" : "TOKEN"}</p>
+                  <p className="text-xl font-bold">
+                    {(BigInt(swapData.amountIn) / BigInt(10 ** 18)).toString()} 
+                    {props.fromTokenAddress === zeroAddress ? "BERA" : swapData.tokens[0]?.symbol}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Amount Out</p>
-                  <p className="text-xl font-bold">{swapData.amountOut} {props.toTokenAddress === zeroAddress ? "BERA" : "TOKEN"}</p>
+                  <p className="text-xl font-bold">
+                    {(BigInt(swapData.assumedAmountOut) / BigInt(10 ** 18)).toString()} 
+                    {props.toTokenAddress === zeroAddress ? "BERA" : swapData.tokens[1]?.symbol}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Price Impact</p>
-                  <p className="text-xl font-bold">{swapData.priceImpact}%</p>
+                  <p className="text-xl font-bold">{(swapData.priceImpact * 100).toFixed(2)}%</p>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Gas Estimate</p>
-                  <p className="text-xl font-bold">{swapData.gasEstimate} BERA</p>
+                  <p className="text-sm text-muted-foreground">Route</p>
+                  <p className="text-sm">
+                    {swapData.route.map((r, i) => (
+                      <span key={i}>
+                        {i > 0 ? " → " : ""}
+                        {r.poolName} ({(r.share * 100).toFixed(0)}%)
+                      </span>
+                    ))}
+                  </p>
                 </div>
               </div>
               <Button 
                 onClick={handleSwap}
                 className="w-full"
-                disabled={!swapData.tx}
+                disabled={!swapData.tx || swapData.status !== "Success"}
               >
                 Execute Swap
               </Button>

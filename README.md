@@ -5,16 +5,17 @@ A DeFi trading assistant powered by AI that helps you make informed decisions ab
 ## Features
 
 - **Real-time Price Data**: Integrated with OogaBooga's Price API for accurate and up-to-date token information
-  - Current price
-  - 24h price changes
-  - Trading volume
-  - Market capitalization
+  - Current price in USD
+  - Price updates in real-time
+  - Support for all whitelisted tokens on Berachain
 
 - **Smart Swap Integration**: Leveraging OogaBooga's Swap API for efficient token swaps
   - Best price routing across multiple DEXs
   - Price impact calculation
   - Gas estimation
   - Slippage protection (0.5% default)
+  - Token approval handling
+  - Multi-hop routing support
 
 ## Technical Integration
 
@@ -55,9 +56,12 @@ The application integrates with two primary OogaBooga APIs:
 
 1. **Price API**
    ```typescript
-   GET https://mainnet.api.oogabooga.io/v1/price/${chainId}/${tokenAddress}
+   GET https://mainnet.api.oogabooga.io/v1/prices?currency=USD
    ```
-   Provides real-time price data and market statistics for tokens on Berachain.
+   Provides real-time price data for all whitelisted tokens on Berachain.
+   - Returns array of token prices in USD
+   - Native token (BERA) is represented as zero address
+   - Updates in real-time
 
 2. **Swap API**
    ```typescript
@@ -68,8 +72,18 @@ The application integrates with two primary OogaBooga APIs:
    - Path definition generation
    - Executor contract interaction
    - Cross-DEX aggregation for best prices
+   - Support for multi-hop swaps
+   - Automatic slippage protection
 
-> **Note**: API key is required for access. Please contact @beranoulli or @whoiskevinn on Telegram to obtain one.
+3. **Token Approval API**
+   ```typescript
+   GET https://mainnet.api.oogabooga.io/v1/approve/allowance
+   POST https://mainnet.api.oogabooga.io/v1/approve
+   ```
+   Manages token approvals for the OogaBooga router:
+   - Check current allowance
+   - Get approval transaction data
+   - Support for infinite approvals
 
 ### API Endpoints
 
@@ -84,10 +98,30 @@ The application interacts with OogaBooga's smart contracts using:
 - OBRouter for swap execution
 - Dynamic executor contracts for optimal routing
 - Wagmi v2 for blockchain interactions
+- Viem for Ethereum utilities
 
 ## Supported Networks
 
 Currently supporting:
 - Berachain (Chain ID: 80094)
+- Berachain bArtio (Chain ID: 80084)
+
+## Setup
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+3. Add your OogaBooga API key to `.env.local`:
+   ```
+   NEXT_PUBLIC_OOGABOOGA_API_KEY=your_api_key_here
+   ```
+4. Run the development server:
+   ```bash
+   pnpm dev
+   ```
+
+> **Note**: API key is required for access. Please contact @beranoulli or @whoiskevinn on Telegram to obtain one.
 
 Please note that this application is a conceptual prototype and not a fully operational product. The application provided is for educational purposes only and should not be considered financial advice.
