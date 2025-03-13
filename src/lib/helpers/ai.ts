@@ -251,18 +251,27 @@ export async function synthesizeResponses(
   nebulaResponse: string,
   perplexityResponse: string,
 ): Promise<string | undefined> {
+  let walletContext = "";
+  let walletBalance = "0.00";
+  let tokenHoldings = "0.00";
+  let tokenContext = "";
+  let tokenPnL: any = null;
+
+  // Try to get data from Cielo first (future-proofing for when they support Berachain)
   const walletStats = await getWalletStats(
     startingData.userWalletAddress,
     getChainName(startingData.chainId),
-  );
-  const tokenPnL = await getTokenPnL(
+  ).catch(() => null);
+
+  const fetchedTokenPnL = await getTokenPnL(
     startingData.userWalletAddress,
     startingData.tokenAddress,
     getChainName(startingData.chainId),
-  );
+  ).catch(() => null);
 
-  let walletContext = "";
+  // If we have Cielo data, use it
   if (walletStats) {
+    walletBalance = walletStats.combined_pnl_usd.toFixed(2);
     walletContext = `
 Wallet Performance:
 - Overall win rate: ${walletStats.winrate}%
@@ -272,35 +281,84 @@ Wallet Performance:
 `;
   }
 
-  let tokenContext = "";
-  if (tokenPnL) {
+  if (fetchedTokenPnL) {
+    tokenPnL = fetchedTokenPnL;
     const hasPosition = tokenPnL.total_buy_usd > tokenPnL.total_sell_usd;
     const currentPosition = tokenPnL.total_buy_usd - tokenPnL.total_sell_usd;
+    tokenHoldings = hasPosition ? currentPosition.toFixed(2) : "0.00";
+    
     tokenContext = `
 Token-Specific Performance:
 - Current Position: ${hasPosition ? `ACTIVE - $${currentPosition.toFixed(2)}` : "NO POSITION"}
 - Number of trades: ${tokenPnL.num_swaps}
-- Total bought: $${tokenPnL.total_buy_usd.toFixed(2)}
-- Total sold: $${tokenPnL.total_sell_usd.toFixed(2)}
-- Token PnL: $${tokenPnL.total_pnl_usd.toFixed(2)} (${tokenPnL.roi_percentage.toFixed(2)}% ROI)
-- Average buy price: $${tokenPnL.average_buy_price.toFixed(6)}
-- Average sell price: $${tokenPnL.average_sell_price.toFixed(6)}
+- Total bought: ${tokenPnL.total_buy_usd.toFixed(2)}
+- Total sold: ${tokenPnL.total_sell_usd.toFixed(2)}
+- Token PnL: ${tokenPnL.total_pnl_usd.toFixed(2)} (${tokenPnL.roi_percentage.toFixed(2)}% ROI)
+- Average buy price: ${tokenPnL.average_buy_price.toFixed(6)}
+- Average sell price: ${tokenPnL.average_sell_price.toFixed(6)}
 - First trade: ${new Date(tokenPnL.first_trade * 1000).toLocaleDateString()}
 - Last trade: ${new Date(tokenPnL.last_trade * 1000).toLocaleDateString()}
-- Is Honeypot: ${tokenPnL.is_honeypot ? "⚠️ YES" : "No"}
+- Is Honeypot: ${tokenPnL.is_honeypot ? "✅ YES" : "No"}
 `;
   }
 
-  const userContext = `${walletContext}\n${tokenContext}`.trim();
+  // If we don't have Cielo data and it's Berachain, use startingData
+  if (!walletStats && !fetchedTokenPnL && startingData.chainId === 80094) {
+    if (startingData.nativeBalance) {
+      walletBalance = startingData.nativeBalance;
+      walletContext = `
+Wallet Performance:
+- Native BERA Balance: ${walletBalance} BERA
+`;
+    }
 
-  // Get token data from either DexScreener or GeckoTerminal
-  const tokenName = startingData.dexScreenerData?.name || startingData.geckoTerminalData?.data?.attributes?.name || "N/A";
-  const tokenSymbol = startingData.dexScreenerData?.symbol || startingData.geckoTerminalData?.data?.attributes?.symbol || "N/A";
-  const tokenPrice = startingData.dexScreenerData?.price_usd || startingData.geckoTerminalData?.included?.[0]?.attributes?.base_token_price_usd || "N/A";
-  const tokenMarketCap = startingData.dexScreenerData?.market_cap_usd || startingData.geckoTerminalData?.data?.attributes?.market_cap_usd || "N/A";
-  const tokenVolume = startingData.dexScreenerData?.volume_24h || (startingData.geckoTerminalData?.data?.attributes?.volume_usd?.h24 || "N/A");
-  const tokenLiquidity = startingData.dexScreenerData?.liquidity_usd || startingData.geckoTerminalData?.data?.attributes?.total_reserve_in_usd || "N/A";
-  const tokenPriceChange = startingData.dexScreenerData?.price_change_24h || (startingData.geckoTerminalData?.included?.[0]?.attributes?.price_change_percentage?.h24 || "N/A");
+    if (startingData.tokenBalance) {
+      tokenHoldings = startingData.tokenBalance;
+      const currentPosition = parseFloat(tokenHoldings);
+      
+      // Create tokenPnL object with available data
+      tokenPnL = {
+        total_buy_usd: currentPosition,
+        total_sell_usd: 0,
+        num_swaps: 1,
+        total_pnl_usd: 0,
+        roi_percentage: 0,
+        average_buy_price: 0,
+        average_sell_price: 0,
+        first_trade: Date.now() / 1000,
+        last_trade: Date.now() / 1000,
+        is_honeypot: false
+      };
+
+      tokenContext = `
+Token-Specific Performance:
+- Current Position: ACTIVE - $${currentPosition.toFixed(2)}
+- Number of trades: 1
+- Total bought: $${currentPosition.toFixed(2)}
+- Total sold: $0.00
+- Token PnL: Tracking in progress
+- Average buy price: Tracking in progress
+- Average sell price: N/A
+- First trade: ${new Date().toLocaleDateString()}
+- Last trade: ${new Date().toLocaleDateString()}
+- Is Honeypot: Checking...
+`;
+    }
+  }
+
+  const userContext = `${tokenContext}\n${walletContext}`.trim();
+
+  // Get token data primarily from GeckoTerminal, fallback to DexScreener
+  const tokenName = startingData.geckoTerminalData?.data?.attributes?.name || startingData.dexScreenerData?.name || "N/A";
+  const tokenSymbol = startingData.geckoTerminalData?.data?.attributes?.symbol || startingData.dexScreenerData?.symbol || "N/A";
+  const tokenPrice = startingData.geckoTerminalData?.data?.attributes?.price_usd || startingData.dexScreenerData?.price_usd || "0";
+  const marketCap = startingData.geckoTerminalData?.data?.attributes?.market_cap_usd || startingData.dexScreenerData?.market_cap_usd || "0";
+
+  /* Additional market data fields preserved for future use
+  const tokenVolume = startingData.geckoTerminalData?.data?.attributes?.volume_usd?.h24 || startingData.dexScreenerData?.volume_24h || "0";
+  const tokenLiquidity = startingData.geckoTerminalData?.data?.attributes?.total_reserve_in_usd || startingData.dexScreenerData?.liquidity_usd || "0";
+  const tokenPriceChange = startingData.geckoTerminalData?.included?.[0]?.attributes?.price_change_percentage?.h24 || startingData.dexScreenerData?.price_change_24h || "0";
+  */
 
   const claudeSystemPrompt = `You are the lead analyst focused on making immediate DCA IN (buy), DCA OUT (sell), or Hodl (hold) decisions. Your primary goal is to provide personalized recommendations based on the user's current position and trading history with this token.
 
@@ -309,15 +367,61 @@ ${tokenContext || "No position data available"}
 
 ${walletContext ? `Overall Trading Performance:\n${walletContext}` : ""}
 
+Market Data (Combined from DexScreener and GeckoTerminal):
+- Current Price: $${tokenPrice}
+- Blockchain ID: ${startingData.chainId}
+- Name: ${tokenName}
+- Symbol: ${tokenSymbol}
+- Market Cap: $${marketCap}
+/* Additional market metrics preserved for future use
+- 24h Volume: ${startingData.geckoTerminalData?.data?.attributes?.volume_usd?.h24 || startingData.dexScreenerData?.volume_24h || "N/A"}
+- Total Liquidity: ${startingData.geckoTerminalData?.data?.attributes?.total_reserve_in_usd || startingData.dexScreenerData?.liquidity_usd || "N/A"}
+- 24h Price Change: ${startingData.geckoTerminalData?.included?.[0]?.attributes?.price_change_percentage?.h24 || startingData.dexScreenerData?.price_change_24h || "N/A"}%
+*/
+
+/* Token pools data preserved for future use
+${startingData.geckoTerminalData?.included
+  ? `\nTop Pools: ${
+      startingData.geckoTerminalData.included
+        .map(
+          (p) =>
+            `\n * ${p.attributes.name} (24h Volume: ${p.attributes.volume_usd.h24}, Liquidity: ${p.attributes.reserve_in_usd})`
+        )
+        .join("") || "N/A"
+    }`
+  : "- No trading pair data available"
+}
+*/
+
+/* Token metadata preserved for future use
+${
+  startingData.dexScreenerData?.description
+    ? `\nToken Description: ${startingData.dexScreenerData.description}`
+    : ""
+}
+
+${
+  startingData.dexScreenerData?.trust_score
+    ? `\nTrust Score: ${startingData.dexScreenerData.trust_score}/100`
+    : ""
+}
+
+Social Links: ${[
+  startingData.dexScreenerData?.websites ? `Website: ${startingData.dexScreenerData.websites[0]}` : null,
+  startingData.dexScreenerData?.discord_url ? `Discord: ${startingData.dexScreenerData.discord_url}` : null,
+  startingData.dexScreenerData?.telegram_handle ? `Telegram: ${startingData.dexScreenerData.telegram_handle}` : null,
+  startingData.dexScreenerData?.twitter_handle ? `Twitter: ${startingData.dexScreenerData.twitter_handle}` : null,
+]
+  .filter(Boolean)
+  .join("\n * ") || "N/A"}
+*/
+
 Analysis Requirements:
-1. User's Position and History (HIGHEST PRIORITY)
-   - If user holds a position, evaluate whether to hold/add or take profits
-   - If no position, evaluate if this is a good entry point
-   - Consider user's trading history with this token
-2. Price momentum and volatility
-3. On-chain activity and whale movements
-4. Market sentiment and news impact
-5. Risk factors and potential catalysts
+1. Price momentum and volatility
+2. On-chain activity and whale movements
+3. Market sentiment and news impact
+4. Risk factors and potential catalysts
+5. User's current holdings and portfolio impact
 6. Suggested position size (% of portfolio)
 
 Remember:
@@ -350,82 +454,22 @@ ${nebulaResponse || "No Nebula response available"}
 Online Search Engine Perspective (Perplexity):
 ${perplexityResponse || "No Perplexity response available"}
 
-Market Data (Combined from DexScreener and GeckoTerminal):
-- Current Price: $${tokenPrice}
-- Blockchain ID: ${startingData.chainId}
-- Name: ${tokenName}
-- Symbol: ${tokenSymbol}
-- Market Cap: $${tokenMarketCap}
-- 24h Volume: $${tokenVolume}
-- Liquidity: $${tokenLiquidity}
-- 24h Price Change: ${tokenPriceChange}%
-${
-  startingData.geckoTerminalData?.included
-    ? `- Top Pools: ${
-        startingData.geckoTerminalData.included
-          .map(
-            (p) =>
-              `\n  * ${p.attributes.name} (24h Volume: $${p.attributes.volume_usd.h24}, Liquidity: $${p.attributes.reserve_in_usd})`,
-          )
-          .join("") || "N/A"
-      }`
-    : "- No trading pair data available"
-}
-${
-  startingData.dexScreenerData?.description
-    ? `- Token Description: ${startingData.dexScreenerData.description}`
-    : ""
-}
-${
-  startingData.dexScreenerData?.trust_score
-    ? `- Trust Score: ${startingData.dexScreenerData.trust_score}/100`
-    : ""
-}
-${
-  startingData.dexScreenerData?.websites || startingData.dexScreenerData?.discord_url || startingData.dexScreenerData?.telegram_handle || startingData.dexScreenerData?.twitter_handle
-    ? `- Social Links: ${
-        [
-          startingData.dexScreenerData.websites ? `Website: ${startingData.dexScreenerData.websites[0]}` : null,
-          startingData.dexScreenerData.discord_url ? `Discord: ${startingData.dexScreenerData.discord_url}` : null,
-          startingData.dexScreenerData.telegram_handle ? `Telegram: ${startingData.dexScreenerData.telegram_handle}` : null,
-          startingData.dexScreenerData.twitter_handle ? `Twitter: ${startingData.dexScreenerData.twitter_handle}` : null
-        ]
-          .filter(Boolean)
-          .map(link => `\n  * ${link}`)
-          .join("")
-      }`
-    : ""
-}
-
-User Context:
-${userContext}
-
-Analysis Requirements:
-1. Price momentum and volatility
-2. On-chain activity and whale movements
-3. Market sentiment and news impact
-4. Risk factors and potential catalysts
-5. User's current holdings and portfolio impact
-6. Suggested position size (% of portfolio)
-
-Response Format:
-You must respond with a JSON object using this exact structure:
+Please format your response as a JSON object with the following structure:
 {
   "sections": [
     {
-      "section": "inputs", // get this section from 
+      "section": "inputs",
       "tokenInfo": {
-        "address": "string",
         "name": "${tokenName}",
         "symbol": "${tokenSymbol}",
-        "price": "string",
-        "marketCap": "string",
-        "chainid": "${startingData.chainId}",
+        "price": "${tokenPrice}",
+        "marketCap": "${marketCap}",
+        "chainid": "${startingData.chainId}"
       },
       "walletInfo": {
-        "address": "string",
-        "balance": "string",
-        "holdings": "string"
+        "address": "${startingData.userWalletAddress}",
+        "balance": "${walletBalance}",
+        "holdings": "${tokenHoldings}"
       }
     },
     {
@@ -438,6 +482,18 @@ You must respond with a JSON object using this exact structure:
       "title": "string", // e.g. "DCA IN $3.2k into VVV", be specific with your amount if possible and make sure if it's a sell it's less than the user has. Can also be in a hold/sell position "Don't buy VVV". Max 24 chars
       "description": "string", // e.g. "Buy ~$3.2k at $62.3m MC", a more straightforward and informed way to say the same thing as title. Max 30 chars
       "summary": "string", // e.g. "DCA IN (buy) 20% of your portfolio into VVV"
+      "tokenInfo": {
+        "name": "${tokenName}",
+        "symbol": "${tokenSymbol}",
+        "price": "${tokenPrice}",
+        "marketCap": "${marketCap}",
+        "chainid": "${startingData.chainId}"
+      },
+      "walletInfo": {
+        "address": "${startingData.userWalletAddress}",
+        "balance": "${walletBalance}",
+        "holdings": "${tokenHoldings}"
+      },
       "actions": [
         {
           "label": "string",
@@ -469,10 +525,13 @@ Make sure to:
 6. Focus on insights, things a trader wouldn't already know, specific to the token and current market conditions
 7. Use accurate values and proper JSON format`;
 
-  return await askClaude(
-    "Based on the provided information, generate a complete trading analysis and recommendation in the specified JSON format. Ensure all required fields are included and properly formatted.",
-    claudeSystemPrompt,
-  );
+  try {
+    const response = await askClaude(userContext, claudeSystemPrompt);
+    return response;
+  } catch (error) {
+    console.error("Error in synthesizeResponses:", error);
+    return;
+  }
 }
 
 function getChainName(chainId: number): string {

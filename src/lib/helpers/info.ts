@@ -3,6 +3,8 @@ import { type GeckoTerminalData, getGeckoTerminalData } from "./geckoterminal";
 import { calculateGrowthScore } from "./growth-score";
 import { getHourlyTransferCount, type TransferCount } from "./insight";
 import { getTokenInfo, type DexScreenerToken } from "../../lib/dexscreener";
+import { supportedChains } from "../../lib/supportedChains";
+import { formatUnits, parseAbi } from "viem";
 
 export type StartingData = {
   contractABI?: string;
@@ -13,6 +15,8 @@ export type StartingData = {
   chainId: number;
   tokenAddress: string;
   userWalletAddress: string;
+  nativeBalance?: string;
+  tokenBalance?: string;
 };
 
 /**
@@ -144,6 +148,69 @@ export const gatherStartingData = async (
     
     // Try to get data from both sources, but prioritize GeckoTerminal
     let hourlyTransferCounts, contractABI, geckoTerminalData, dexScreenerTokenInfo;
+    let nativeBalance = "0", tokenBalance = "0";
+    
+    // For Berachain, fetch balances using RPC
+    if (chainId === 80094) {
+      try {
+        // Get native balance
+        const chain = supportedChains.find(c => c.id === chainId);
+        if (chain) {
+          const rpcUrl = `https://${chain.id}.rpc.thirdweb.com/${process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}`;
+          
+          // Get native balance
+          const nativeBalanceResponse = await fetch(rpcUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              id: 1,
+              method: "eth_getBalance",
+              params: [userWalletAddress, "latest"]
+            })
+          });
+          const { result: nativeBalanceResult } = await nativeBalanceResponse.json();
+          nativeBalance = formatUnits(BigInt(nativeBalanceResult), 18);
+
+          // Get token decimals
+          const decimalsResponse = await fetch(rpcUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              id: 2,
+              method: "eth_call",
+              params: [{
+                to: tokenAddress,
+                data: "0x313ce567" // decimals()
+              }, "latest"]
+            })
+          });
+          const { result: decimalsResult } = await decimalsResponse.json();
+          const decimals = parseInt(decimalsResult, 16);
+
+          // Get token balance
+          const balanceData = "0x70a08231" + "000000000000000000000000" + userWalletAddress.slice(2); // balanceOf(address)
+          const balanceResponse = await fetch(rpcUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              id: 3,
+              method: "eth_call",
+              params: [{
+                to: tokenAddress,
+                data: balanceData
+              }, "latest"]
+            })
+          });
+          const { result: balanceResult } = await balanceResponse.json();
+          tokenBalance = formatUnits(BigInt(balanceResult), decimals);
+        }
+      } catch (error) {
+        console.warn("Failed to fetch balances:", error);
+      }
+    }
     
     try {
       // First try to get GeckoTerminal data (primary source)
@@ -186,6 +253,8 @@ export const gatherStartingData = async (
       hasContractABI: !!contractABI,
       hasGeckoTerminalData: !!geckoTerminalData,
       hasDexScreenerData: !!dexScreenerData,
+      nativeBalance,
+      tokenBalance,
     });
 
     // Use hardcoded data if both APIs failed
@@ -203,6 +272,8 @@ export const gatherStartingData = async (
         dexScreenerData: hardcodedData,
         growthScore,
         hourlyTransferCounts,
+        nativeBalance,
+        tokenBalance,
       };
     }
 
@@ -217,6 +288,8 @@ export const gatherStartingData = async (
       dexScreenerData,
       growthScore,
       hourlyTransferCounts,
+      nativeBalance,
+      tokenBalance,
     };
   } catch (error) {
     console.error("Error in gatherStartingData:", error);
