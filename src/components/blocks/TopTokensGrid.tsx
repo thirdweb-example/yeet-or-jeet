@@ -26,7 +26,7 @@ export function TopTokensGrid({ onTokenSelect }: { onTokenSelect: (address: stri
       setCopiedAddress(address);
       toast.success("Address copied to clipboard");
       setTimeout(() => setCopiedAddress(null), 2000);
-    } catch (err) {
+    } catch {
       toast.error("Failed to copy address");
     }
   };
