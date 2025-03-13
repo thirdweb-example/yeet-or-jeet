@@ -29,6 +29,30 @@ interface TokenInfoPool {
   };
 }
 
+interface TokenPriceInfo {
+  price_usd: string;
+  price_change_24h: number;
+  price_change_7d: number;
+  price_change_30d: number;
+  volume_24h: number;
+  market_cap_usd: number;
+}
+
+interface TokenMarketData {
+  price: TokenPriceInfo;
+  market_data: {
+    market_cap_usd: number;
+    volume_24h: number;
+    price_change_24h: number;
+    price_change_7d: number;
+    price_change_30d: number;
+  };
+  liquidity: {
+    total_liquidity_usd: number;
+    liquidity_change_24h: number;
+  };
+}
+
 export interface TokenInfo {
   price?: string;
   network?: string;
@@ -38,6 +62,23 @@ export interface TokenInfo {
   pools?: TokenInfoPool[];
   trades?: any[];
   info?: any;
+  marketData?: TokenMarketData;
+  priceHistory?: {
+    price_usd: string;
+    timestamp: number;
+  }[];
+  topPools?: {
+    address: string;
+    name: string;
+    volume_24h: number;
+    liquidity: number;
+    price_change_24h: number;
+  }[];
+  tokenHolders?: {
+    address: string;
+    balance: string;
+    percentage: number;
+  }[];
 }
 
 async function fetchGeckoTerminal(endpoint: string) {
@@ -100,17 +141,48 @@ export async function getTokenInfo(
       info: tokenData.data.attributes,
     };
 
-    // Get price data
+    // Get price and market data
     try {
       const priceData = await fetchGeckoTerminal(`/networks/${network}/tokens/${normalizedAddress}/price`);
-      if (priceData?.data?.attributes?.price_usd) {
+      if (priceData?.data?.attributes) {
+        tokenInfo.marketData = {
+          price: {
+            price_usd: priceData.data.attributes.price_usd,
+            price_change_24h: priceData.data.attributes.price_change_24h,
+            price_change_7d: priceData.data.attributes.price_change_7d,
+            price_change_30d: priceData.data.attributes.price_change_30d,
+            volume_24h: priceData.data.attributes.volume_24h,
+            market_cap_usd: priceData.data.attributes.market_cap_usd,
+          },
+          market_data: {
+            market_cap_usd: priceData.data.attributes.market_cap_usd,
+            volume_24h: priceData.data.attributes.volume_24h,
+            price_change_24h: priceData.data.attributes.price_change_24h,
+            price_change_7d: priceData.data.attributes.price_change_7d,
+            price_change_30d: priceData.data.attributes.price_change_30d,
+          },
+          liquidity: {
+            total_liquidity_usd: priceData.data.attributes.total_liquidity_usd,
+            liquidity_change_24h: priceData.data.attributes.liquidity_change_24h,
+          },
+        };
         tokenInfo.price = priceData.data.attributes.price_usd;
       }
     } catch (error) {
       console.warn("Failed to fetch price data:", error);
     }
 
-    // Get pools data
+    // Get price history
+    try {
+      const priceHistoryData = await fetchGeckoTerminal(`/networks/${network}/tokens/${normalizedAddress}/price_history`);
+      if (priceHistoryData?.data?.attributes?.price_history) {
+        tokenInfo.priceHistory = priceHistoryData.data.attributes.price_history;
+      }
+    } catch (error) {
+      console.warn("Failed to fetch price history:", error);
+    }
+
+    // Get top pools
     try {
       const poolsData = await fetchGeckoTerminal(`/networks/${network}/tokens/${normalizedAddress}/pools`);
       if (poolsData?.data) {
@@ -128,9 +200,34 @@ export async function getTokenInfo(
               .toLowerCase(),
           },
         }));
+
+        // Get top pools with price change
+        tokenInfo.topPools = poolsData.data
+          .slice(0, 5)
+          .map((pool: any) => ({
+            address: pool.attributes.address,
+            name: pool.attributes.name,
+            volume_24h: pool.attributes.volume_usd_24h,
+            liquidity: pool.attributes.reserve_in_usd,
+            price_change_24h: pool.attributes.price_change_24h,
+          }));
       }
     } catch (error) {
       console.warn("Failed to fetch pools data:", error);
+    }
+
+    // Get token holders
+    try {
+      const holdersData = await fetchGeckoTerminal(`/networks/${network}/tokens/${normalizedAddress}/holders`);
+      if (holdersData?.data) {
+        tokenInfo.tokenHolders = holdersData.data.map((holder: any) => ({
+          address: holder.attributes.address,
+          balance: holder.attributes.balance,
+          percentage: holder.attributes.percentage,
+        }));
+      }
+    } catch (error) {
+      console.warn("Failed to fetch token holders:", error);
     }
 
     if (!tokenInfo.name || !tokenInfo.symbol) {
