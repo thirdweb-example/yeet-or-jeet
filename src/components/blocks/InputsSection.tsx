@@ -102,6 +102,7 @@ const chainMap: Record<number, string> = {
   42161: "arbitrum",
   10: "optimism",
   8453: "base",
+  80094: "berachain",
 };
 
 export function WalletInfoCard(props: WalletInfo) {

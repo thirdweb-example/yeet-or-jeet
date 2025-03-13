@@ -445,6 +445,7 @@ function getChainName(chainId: number): string {
     42161: "arbitrum",
     10: "optimism",
     8453: "base",
+    80094: "berachain",
     // Add more chains as needed
   };
   return chainMap[chainId] || "ethereum";

@@ -2,6 +2,7 @@
 const chainIdToSlug: Record<number, string> = {
   8453: "base",
   1: "eth",
+  80094: "berachain",
 };
 
 export type GeckoTxStats = {

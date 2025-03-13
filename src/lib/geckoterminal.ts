@@ -7,6 +7,7 @@ const API_VERSION = "20230302";
 const geckoNetworkMap: { [key: number]: string } = {
   137: "polygon_pos",
   8453: "base",
+  80094: "berachain",
 };
 
 interface TokenInfoPool {
