@@ -5,17 +5,17 @@ const API_VERSION = "20230302";
 // TODO - remove explicit any, add proper types
 
 const geckoNetworkMap: { [key: number]: string } = {
-  1: "ethereum",
-  137: "polygon_pos",
-  42161: "arbitrum",
-  10: "optimism",
-  8453: "base",
+  // 1: "ethereum",
+  // 137: "polygon_pos",
+  // 42161: "arbitrum",
+  // 10: "optimism",
+  // 8453: "base",
   80094: "berachain",
-  43114: "avalanche",
-  56: "bsc",
-  81457: "blast",
-  42220: "celo",
-  324: "zksync",
+  // 43114: "avalanche",
+  // 56: "bsc",
+  // 81457: "blast",
+  // 42220: "celo",
+  // 324: "zksync",
 };
 
 interface TokenInfoPool {
