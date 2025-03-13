@@ -24,6 +24,8 @@ const berachain = supportedChains.find((chain) => chain.id === 80094)!;
 
 export function TopTokensGrid({ onTokenSelect }: { onTokenSelect: (address: string) => void }) {
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  
   const topTokensQuery = useQuery({
     queryKey: ["topTokens"],
     queryFn: getTopTokens,
@@ -46,6 +48,14 @@ export function TopTokensGrid({ onTokenSelect }: { onTokenSelect: (address: stri
     if (!url) return;
     
     window.open(url, '_blank', 'noopener,noreferrer');
+  };
+  
+  const handleImageError = (address: string) => {
+    setFailedImages(prev => {
+      const newSet = new Set(prev);
+      newSet.add(address);
+      return newSet;
+    });
   };
 
   if (topTokensQuery.isLoading) {
@@ -89,38 +99,24 @@ export function TopTokensGrid({ onTokenSelect }: { onTokenSelect: (address: stri
               className="w-full text-left bg-card border rounded-xl p-6 hover:border-active-border transition-all duration-200 hover:shadow-md"
             >
               <div className="flex items-center gap-4">
-                {token.image_url ? (
+                {token.image_url && !failedImages.has(token.address) ? (
                   <div className="relative size-12 rounded-full overflow-hidden ring-2 ring-background">
                     <Image 
                       src={token.image_url} 
                       alt={token.name} 
                       fill 
                       className="object-cover"
-                      onError={(e) => {
-                        // Fallback to TokenIcon if image fails to load
-                        const imgElement = e.currentTarget as HTMLImageElement;
-                        imgElement.style.display = 'none';
-                        
-                        // Find the next element (TokenIcon) and show it
-                        const nextElement = imgElement.parentElement?.querySelector('.hidden');
-                        if (nextElement instanceof HTMLElement) {
-                          nextElement.style.display = 'block';
-                        }
-                      }}
-                    />
-                    <TokenIcon
-                      className="size-12 rounded-full ring-2 ring-background hidden"
-                      fallbackComponent={
-                        <div className="size-12 rounded-full from-blue-800 to-blue-500 bg-gradient-to-br ring-2 ring-background" />
-                      }
-                      loadingComponent={<Skeleton className="size-12 rounded-full" />}
+                      onError={() => handleImageError(token.address)}
+                      unoptimized // Skip Next.js image optimization for external URLs
                     />
                   </div>
                 ) : (
                   <TokenIcon
                     className="size-12 rounded-full ring-2 ring-background"
                     fallbackComponent={
-                      <div className="size-12 rounded-full from-blue-800 to-blue-500 bg-gradient-to-br ring-2 ring-background" />
+                      <div className="size-12 rounded-full from-blue-800 to-blue-500 bg-gradient-to-br ring-2 ring-background flex items-center justify-center text-white font-bold">
+                        {token.symbol?.slice(0, 2).toUpperCase() || "??"}
+                      </div>
                     }
                     loadingComponent={<Skeleton className="size-12 rounded-full" />}
                   />
