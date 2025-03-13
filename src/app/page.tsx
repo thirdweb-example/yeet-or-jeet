@@ -99,9 +99,7 @@ export default function LandingPage() {
             id: "response",
             props: {
               tokenAddress: values.tokenAddress,
-              chain:
-                supportedChains.find((chain) => chain.id === values.chainId) ||
-                defaultSelectedChain,
+              chain: supportedChains.find((chain) => chain.id === 80094) || defaultSelectedChain,
               walletAddress: account?.address || "",
             },
           });
@@ -123,7 +121,7 @@ export default function LandingPage() {
 }
 
 function LandingPageScreen(props: {
-  onSubmit: (values: z.infer<typeof formSchema>) => void;
+  onSubmit: (values: { tokenAddress: string }) => void;
 }) {
   return (
     <main className="grow flex flex-col">
@@ -131,15 +129,11 @@ function LandingPageScreen(props: {
         <h1 className="text-6xl lg:text-8xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-t dark:bg-gradient-to-b from-foreground to-foreground/70 tracking-tight inline-flex gap-2 lg:gap-3 items-center">
           <span>the b/era</span>
         </h1>
-        <p className="text-xl lg: mb-16 text-muted-foreground font-medium">
+        <p className="text-xl lg:text-2xl mb-16 text-muted-foreground font-medium text-center">
           NFA. DYOR. 1/ WHO TF IS BERACHAIN.
         </p>
 
-        <TokenForm
-          onSubmit={(values) => {
-            props.onSubmit(values);
-          }}
-        />
+        <TokenForm onSubmit={props.onSubmit} />
       </div>
     </main>
   );
@@ -360,29 +354,20 @@ function ResponseScreen(props: {
 }
 
 const formSchema = z.object({
-  chainId: z.coerce.number().int().min(1, "Chain is required"),
   tokenAddress: z
     .string()
     .min(1, "Token address is required")
-    .refine((v) => {
-      // don't directly return isAddress(v) because it wil typecase tokenAddress to 0xString
-      if (isAddress(v)) {
-        return true;
-      }
-
-      return false;
-    }, "Invalid token address"),
+    .refine((v) => isAddress(v), "Invalid token address"),
 });
 
 function TokenForm(props: {
-  onSubmit: (values: z.infer<typeof formSchema>) => void;
+  onSubmit: (values: { tokenAddress: string }) => void;
 }) {
   const account = useActiveAccount();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    values: {
-      chainId: defaultSelectedChain.id,
-      tokenAddress: "",
+    defaultValues: {
+      tokenAddress: "0x" as `0x${string}`,
     },
   });
 
@@ -396,34 +381,6 @@ function TokenForm(props: {
         onSubmit={form.handleSubmit(onSubmit)}
         className="w-full max-w-sm flex flex-col gap-5"
       >
-        <FormField
-          control={form.control}
-          name="chainId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Chain</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value.toString()}
-              >
-                <FormControl>
-                  <SelectTrigger className="w-full bg-card border-input text-foreground focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all">
-                    <SelectValue placeholder="Select a chain" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {supportedChains.map((chain) => (
-                    <SelectItem key={chain.id} value={chain.id.toString()}>
-                      {chain.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         <FormField
           control={form.control}
           name="tokenAddress"
