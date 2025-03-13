@@ -17,6 +17,7 @@ const berachain: Chain = {
   ],
 };
 
+/* 
 const ethereum: Chain = {
   id: 1,
   rpc: "https://eth.llamarpc.com",
@@ -186,10 +187,11 @@ const zksync: Chain = {
     },
   ],
 };
+*/
 
 export const supportedChains: Chain[] = [
   berachain,
-  ethereum,
+  /* ethereum,
   polygon,
   arbitrum,
   optimism,
@@ -198,6 +200,6 @@ export const supportedChains: Chain[] = [
   bnb,
   blast,
   celo,
-  zksync,
+  zksync, */
 ];
 export const defaultSelectedChain = berachain;
