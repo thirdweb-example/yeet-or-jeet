@@ -325,6 +325,7 @@ function isStablecoin(symbol: string, address?: string): boolean {
   // Specific stablecoin addresses to exclude from the homepage
   const stablecoinAddresses = [
     '0x1ce0a25d13ce4d52071ae7e02cf1f6606f4c79d3', // NECT
+    '0xfcbd14dc51f0a4d49d5e53c2e0950e0bc26d0dce', // HONEY
     '0x211cc4dd073734da055fbf44a2b4667d5e5fe5d2', // sUSD.e
     '0x2840f9d9f96321435ab0f977e7fdbf32ea8b304f', // sUSDa
   ];
