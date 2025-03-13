@@ -125,31 +125,50 @@ export default function LandingPage() {
 function LandingPageScreen(props: {
   onSubmit: (values: { tokenAddress: string }) => void;
 }) {
+  const account = useActiveAccount();
+
   return (
     <main className="container max-w-6xl mx-auto py-8 px-4">
-      <div className="flex flex-col items-center text-center mb-16">
+      <div className="flex flex-col items-center text-center mb-12">
         <h1 className="text-6xl lg:text-8xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-t dark:bg-gradient-to-b from-foreground to-foreground/70 tracking-tight inline-flex gap-2 lg:gap-3 items-center">
           <span>the b/era</span>
         </h1>
-        <p className="text-xl lg:text-2xl text-muted-foreground font-medium">
+        <p className="text-xl lg:text-2xl text-muted-foreground font-medium mb-8">
           NFA. DYOR. 1/ WHO TF IS BERACHAIN.
         </p>
+        {!account && (
+          <div className="w-full max-w-sm">
+            <CustomizedConnectButton />
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-col items-center mb-16">
-        <div className="w-full max-w-sm">
-          <TokenForm onSubmit={props.onSubmit} />
+      <div className="space-y-8">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold tracking-tight">Top Trading Tokens</h2>
+              <p className="text-muted-foreground mt-1">Highest 24h volume on Berachain</p>
+            </div>
+            {account && (
+              <p className="text-sm text-muted-foreground">
+                Click any token to analyze it
+              </p>
+            )}
+          </div>
         </div>
-      </div>
-
-      <div className="space-y-6">
-        <h2 className="text-2xl font-semibold tracking-tight">Top Tokens on Berachain</h2>
-        <p className="text-muted-foreground">Click on a token to analyze it</p>
-        <TopTokensGrid 
-          onTokenSelect={(address) => {
-            props.onSubmit({ tokenAddress: address });
-          }} 
-        />
+        
+        {!account ? (
+          <div className="rounded-xl border-2 border-dashed p-8 text-center">
+            <p className="text-muted-foreground">Connect your wallet to analyze tokens</p>
+          </div>
+        ) : (
+          <TopTokensGrid 
+            onTokenSelect={(address) => {
+              props.onSubmit({ tokenAddress: address });
+            }} 
+          />
+        )}
       </div>
     </main>
   );
