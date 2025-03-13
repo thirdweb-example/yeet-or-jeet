@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { WalletBalances } from "./WalletBalances";
 import type { Chain } from "thirdweb";
+import { type ReactNode } from "react";
 
 interface ResponseSection {
   section: string;
@@ -35,18 +36,20 @@ interface ResponseSection {
   }>;
 }
 
-type ResponseScreenProps = {
-  response: {
-    sections: ResponseSection[];
-  };
+interface Response {
+  sections: ResponseSection[];
+}
+
+interface ResponseScreenProps {
+  response: Response;
   startingData: {
     walletAddress?: string;
     tokenAddress?: string;
     chain?: Chain;
   };
-};
+}
 
-export function ResponseScreen({ response, startingData }: ResponseScreenProps) {
+export function ResponseScreen({ response, startingData }: ResponseScreenProps): ReactNode {
   const [nativeBalance, setNativeBalance] = useState("0");
   const [tokenBalance, setTokenBalance] = useState("0");
 
