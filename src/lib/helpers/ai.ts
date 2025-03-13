@@ -18,6 +18,19 @@ const anthropic = new Anthropic({
   apiKey: anthropicApiKey,
 });
 
+interface TokenPnL {
+  total_buy_usd: number;
+  total_sell_usd: number;
+  num_swaps: number;
+  total_pnl_usd: number;
+  roi_percentage: number;
+  average_buy_price: number;
+  average_sell_price: number;
+  first_trade: number;
+  last_trade: number;
+  is_honeypot: boolean;
+}
+
 export async function askClaude(
   prompt: string,
   systemPrompt?: string,
@@ -255,7 +268,7 @@ export async function synthesizeResponses(
   let walletBalance = "0.00";
   let tokenHoldings = "0.00";
   let tokenContext = "";
-  let tokenPnL: any = null;
+  let tokenPnL: TokenPnL | null = null;
 
   // Try to get data from Cielo first (future-proofing for when they support Berachain)
   const walletStats = await getWalletStats(
@@ -282,24 +295,24 @@ Wallet Performance:
   }
 
   if (fetchedTokenPnL) {
-    tokenPnL = fetchedTokenPnL;
-    const hasPosition = tokenPnL.total_buy_usd > tokenPnL.total_sell_usd;
-    const currentPosition = tokenPnL.total_buy_usd - tokenPnL.total_sell_usd;
+    tokenPnL = fetchedTokenPnL as TokenPnL;
+    const hasPosition = tokenPnL && tokenPnL.total_buy_usd > tokenPnL.total_sell_usd;
+    const currentPosition = tokenPnL ? tokenPnL.total_buy_usd - tokenPnL.total_sell_usd : 0;
     tokenHoldings = hasPosition ? currentPosition.toFixed(2) : "0.00";
     
-    tokenContext = `
+    tokenContext = tokenPnL ? `
 Token-Specific Performance:
 - Current Position: ${hasPosition ? `ACTIVE - $${currentPosition.toFixed(2)}` : "NO POSITION"}
 - Number of trades: ${tokenPnL.num_swaps}
-- Total bought: ${tokenPnL.total_buy_usd.toFixed(2)}
-- Total sold: ${tokenPnL.total_sell_usd.toFixed(2)}
-- Token PnL: ${tokenPnL.total_pnl_usd.toFixed(2)} (${tokenPnL.roi_percentage.toFixed(2)}% ROI)
-- Average buy price: ${tokenPnL.average_buy_price.toFixed(6)}
-- Average sell price: ${tokenPnL.average_sell_price.toFixed(6)}
+- Total bought: $${tokenPnL.total_buy_usd.toFixed(2)}
+- Total sold: $${tokenPnL.total_sell_usd.toFixed(2)}
+- Token PnL: $${tokenPnL.total_pnl_usd.toFixed(2)} (${tokenPnL.roi_percentage.toFixed(2)}% ROI)
+- Average buy price: $${tokenPnL.average_buy_price.toFixed(6)}
+- Average sell price: $${tokenPnL.average_sell_price.toFixed(6)}
 - First trade: ${new Date(tokenPnL.first_trade * 1000).toLocaleDateString()}
 - Last trade: ${new Date(tokenPnL.last_trade * 1000).toLocaleDateString()}
 - Is Honeypot: ${tokenPnL.is_honeypot ? "✅ YES" : "No"}
-`;
+` : "";
   }
 
   // If we don't have Cielo data and it's Berachain, use startingData
