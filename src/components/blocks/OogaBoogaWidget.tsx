@@ -13,6 +13,19 @@ const oogaBoogaChainMap = {
   80094: "berachain",
 } as const;
 
+const OOGABOOGA_API_KEY = process.env.NEXT_PUBLIC_OOGABOOGA_API_KEY;
+
+if (!OOGABOOGA_API_KEY) {
+  console.warn("Missing OOGABOOGA_API_KEY environment variable");
+}
+
+const getApiBaseUrl = (chainId: number) => {
+  if (chainId === 80084) {
+    return "https://bartio.api.oogabooga.io";
+  }
+  return "https://mainnet.api.oogabooga.io";
+};
+
 interface SwapData {
   pathDefinition: string;
   executor: string;
@@ -39,6 +52,8 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
   const [amount, setAmount] = useState<string>("");
   const { address } = useAccount();
 
+  const baseUrl = getApiBaseUrl(props.chainId);
+
   useEffect(() => {
     const fetchPriceData = async () => {
       try {
@@ -48,7 +63,12 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
 
         const tokenAddress = props.toTokenAddress || props.fromTokenAddress;
         const response = await fetch(
-          `https://api.oogabooga.io/v1/price/${props.chainId}/${tokenAddress}`
+          `${baseUrl}/v1/price/${props.chainId}/${tokenAddress}`,
+          {
+            headers: {
+              "Authorization": `Bearer ${OOGABOOGA_API_KEY}`,
+            },
+          }
         );
 
         if (!response.ok) {
@@ -65,18 +85,19 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
     };
 
     fetchPriceData();
-  }, [props.chainId, props.toTokenAddress, props.fromTokenAddress]);
+  }, [props.chainId, props.toTokenAddress, props.fromTokenAddress, baseUrl]);
 
   const fetchSwapData = async () => {
     if (!amount || !props.fromTokenAddress || !props.toTokenAddress) return;
 
     try {
       const response = await fetch(
-        `https://api.oogabooga.io/v1/swap/${props.chainId}`,
+        `${baseUrl}/v1/swap/${props.chainId}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${OOGABOOGA_API_KEY}`,
           },
           body: JSON.stringify({
             fromToken: props.fromTokenAddress,

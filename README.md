@@ -24,18 +24,27 @@ The application integrates with two primary OogaBooga APIs:
 
 1. **Price API**
    ```typescript
-   GET https://api.oogabooga.io/v1/price/${chainId}/${tokenAddress}
+   GET https://mainnet.api.oogabooga.io/v1/price/${chainId}/${tokenAddress}
    ```
    Provides real-time price data and market statistics for tokens on Berachain.
 
 2. **Swap API**
    ```typescript
-   POST https://api.oogabooga.io/v1/swap/${chainId}
+   POST https://mainnet.api.oogabooga.io/v1/swap/${chainId}
    ```
    Handles token swaps with the following features:
    - Optimal routing through OBRouter
    - Path definition generation
    - Executor contract interaction
+
+> **Note**: API key is required for access. Please contact @beranoulli or @whoiskevinn on Telegram to obtain one.
+
+### API Endpoints
+
+| Network | Chain ID | API Base URL |
+|---------|----------|--------------|
+| Berachain | 80094 | https://mainnet.api.oogabooga.io |
+| Berachain bArtio | 80084 | https://bartio.api.oogabooga.io |
 
 ### Smart Contract Interaction
 
