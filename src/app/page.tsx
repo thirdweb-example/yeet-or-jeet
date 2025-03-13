@@ -132,7 +132,7 @@ function LandingPageScreen(props: {
           <span>This is the b/era</span>
         </h1>
         <p className="text-xl lg: mb-16 text-muted-foreground font-medium">
-          NFA. DYOR. AI-assisted? 1/ WHAT.
+          NFA. DYOR. 1/ WHAT.
         </p>
 
         <TokenForm
