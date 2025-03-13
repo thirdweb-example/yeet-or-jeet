@@ -3,11 +3,11 @@
 import { useTheme } from "next-themes";
 import { cn } from "../../lib/utils";
 import { LoadingSpinner } from "./Loading";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { useAccount, useWriteContract, useSimulateContract } from "wagmi";
-import { parseEther, type Address, maxUint256, zeroAddress } from "viem";
+import { useAccount, useWriteContract } from "wagmi";
+import { parseEther, maxUint256, zeroAddress } from "viem";
 
 const oogaBoogaChainMap = {
   80094: "berachain",
@@ -81,6 +81,10 @@ interface PriceData {
   price: number;
 }
 
+interface PriceDisplayData {
+  price: number;
+}
+
 type OogaBoogaWidgetProps = {
   chainId: number;
   toTokenAddress: string | undefined;
@@ -89,21 +93,20 @@ type OogaBoogaWidgetProps = {
 };
 
 export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
-  const { theme: _theme } = useTheme();
-  const theme = _theme === "dark" ? "dark" : "light";
   const [isLoaded, setIsLoaded] = useState(false);
-  const [priceData, setPriceData] = useState<any>(null);
+  const [priceData, setPriceData] = useState<PriceDisplayData | null>(null);
   const [swapData, setSwapData] = useState<SwapData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [amount, setAmount] = useState<string>("");
   const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
   const [needsApproval, setNeedsApproval] = useState(false);
   const { address } = useAccount();
+  const { writeContract } = useWriteContract();
 
   const baseUrl = getApiBaseUrl(props.chainId);
 
   // Check token allowance
-  const checkAllowance = async () => {
+  const checkAllowance = useCallback(async () => {
     if (!address || !props.fromTokenAddress || props.fromTokenAddress === zeroAddress) {
       return;
     }
@@ -132,7 +135,7 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
     } finally {
       setIsCheckingAllowance(false);
     }
-  };
+  }, [address, props.fromTokenAddress, amount, baseUrl]);
 
   // Approve token allowance
   const approveToken = async () => {
@@ -153,7 +156,6 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
       }
 
       const { tx } = await response.json();
-      const { writeContract } = useWriteContract();
       
       await writeContract({
         address: tx.to as `0x${string}`,
@@ -204,8 +206,6 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
         if (tokenPrice) {
           setPriceData({
             price: tokenPrice.price,
-            // Note: 24h change, volume, and market cap are not provided by the API
-            // We'll need to fetch these from another source if needed
           });
         }
         
@@ -224,7 +224,7 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
     if (amount) {
       checkAllowance();
     }
-  }, [amount, props.fromTokenAddress, address]);
+  }, [amount, checkAllowance]);
 
   const fetchSwapData = async () => {
     if (!amount || !props.fromTokenAddress || !props.toTokenAddress) return;
@@ -258,8 +258,6 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
       setError(err instanceof Error ? err.message : "Failed to load swap data");
     }
   };
-
-  const { writeContract } = useWriteContract();
 
   const handleSwap = async () => {
     if (!swapData?.tx || !swapData.routerParams) return;
