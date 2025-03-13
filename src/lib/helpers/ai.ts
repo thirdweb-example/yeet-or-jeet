@@ -19,16 +19,25 @@ const anthropic = new Anthropic({
 });
 
 interface TokenPnL {
-  total_buy_usd: number;
-  total_sell_usd: number;
   num_swaps: number;
-  total_pnl_usd: number;
-  roi_percentage: number;
+  total_buy_usd: number;
+  total_buy_amount: number;
+  total_sell_usd: number;
+  total_sell_amount: number;
   average_buy_price: number;
   average_sell_price: number;
+  total_pnl_usd: number;
+  roi_percentage: number;
+  unrealized_pnl_usd: number;
+  unrealized_roi_percentage: number;
+  token_price: number;
+  token_address: string;
+  token_symbol: string;
+  token_name: string;
+  chain: string;
+  is_honeypot: boolean;
   first_trade: number;
   last_trade: number;
-  is_honeypot: boolean;
 }
 
 export async function askClaude(
@@ -331,16 +340,25 @@ Wallet Performance:
       
       // Create tokenPnL object with available data
       tokenPnL = {
-        total_buy_usd: currentPosition,
-        total_sell_usd: 0,
         num_swaps: 1,
-        total_pnl_usd: 0,
-        roi_percentage: 0,
+        total_buy_usd: currentPosition,
+        total_buy_amount: currentPosition,
+        total_sell_usd: 0,
+        total_sell_amount: 0,
         average_buy_price: 0,
         average_sell_price: 0,
+        total_pnl_usd: 0,
+        roi_percentage: 0,
+        unrealized_pnl_usd: currentPosition,
+        unrealized_roi_percentage: 0,
+        token_price: 0,
+        token_address: startingData.tokenAddress,
+        token_symbol: startingData.geckoTerminalData?.data?.attributes?.symbol || startingData.dexScreenerData?.symbol || "???",
+        token_name: startingData.geckoTerminalData?.data?.attributes?.name || startingData.dexScreenerData?.name || "Unknown",
+        chain: getChainName(startingData.chainId),
+        is_honeypot: false,
         first_trade: Date.now() / 1000,
-        last_trade: Date.now() / 1000,
-        is_honeypot: false
+        last_trade: Date.now() / 1000
       };
 
       tokenContext = `
