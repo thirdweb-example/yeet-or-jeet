@@ -297,7 +297,7 @@ export const fetchPoolInfo = async (
 };
 
 // Update the TopToken interface to include the additional metadata
-interface TopToken {
+export interface TopToken {
   address: string;
   name: string;
   symbol: string;
@@ -314,6 +314,42 @@ interface TopToken {
   twitter_handle?: string;
   categories?: string[];
   gt_score?: number;
+  liquidity_usd?: number;
+  trust_score?: number;
+}
+
+// Add this function to check if a token is a stablecoin
+function isStablecoin(symbol: string): boolean {
+  if (!symbol) return false;
+  
+  // Expanded list of stablecoins and their variations
+  const stablecoins = [
+    'USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD', 'USDD', 'GUSD', 'USDJ',
+    'UST', 'USDB', 'USDK', 'USDX', 'SUSD', 'CUSD', 'MUSD', 'DUSD', 'HUSD', 'OUSD',
+    'USDN', 'USDH', 'USDL', 'USDR', 'USDV', 'USDW', 'USDY', 'USDZ',
+    'EURT', 'EURS', 'EUROC', 'EURU', 'JEUR', 'SEUR',
+    'CADC', 'XSGD', 'XIDR', 'NZDS', 'TRYB', 'BIDR', 'BRLC', 'CNHT', 'IDRT', 'KRWB',
+    'MIM', 'USDM', 'USDS', 'USDE', 'USDEX', 'USDFL', 'USDQ', 'USDG', 'USDTG'
+  ];
+  
+  // Check if the symbol contains any of the stablecoin identifiers
+  const upperSymbol = symbol.toUpperCase();
+  
+  // Direct match
+  if (stablecoins.includes(upperSymbol)) return true;
+  
+  // Check for common patterns in stablecoin names
+  if (upperSymbol.startsWith('USD') || 
+      upperSymbol.endsWith('USD') || 
+      upperSymbol.includes('USD') ||
+      upperSymbol.startsWith('EUR') ||
+      upperSymbol.endsWith('EUR') ||
+      upperSymbol.includes('STABLE') ||
+      upperSymbol.includes('PEG')) {
+    return true;
+  }
+  
+  return false;
 }
 
 // Add this new function to fetch top tokens
@@ -321,25 +357,9 @@ export async function getTopTokens(): Promise<TopToken[]> {
   try {
     console.log("Fetching real-time top tokens data for Berachain");
     
-    // Define the token addresses we want to track (from our hardcoded list)
-    const tokenAddresses = [
-      "0x6969696969696969696969696969696969696969", // WBERA
-      "0x2f6f07cdcf3588944bf4c42ac74ff24bf56e7590", // WETH
-      "0x0555e30da8f98308edb960aa94c0db47230d2b9c", // WBTC
-      "0x5d7a7e844e2f6d3c0e6f9e97c8ec29795bac2f65", // BONG
-      "0x8c4495d21e725e95a32e8d5b1a96e3b1b5a0c4a9", // HPOT
-      "0x7b5a3e3d8493c8c3b9c1f79d34b9f5bfb3ce7a95", // BERPS
-      "0x3e7fc44e25c07be3d67c241e6e59cb838df035eb", // BINU
-      "0x9c6b5cef4b2a14067c0f7c9b1a8a51f7c0c363f3", // BGOLD
-      "0x4d5f06cdc73d72c891eb79f1d350a1c3c8a84a51", // SALMON
-      "0x2c4a603a2aa5596287a06886862dc29d56dbc354", // GRIZ
-      "0x1d5e65a087eb1cf5c034f19c7967d4c2847022e5", // KOD
-      "0x8a6d4c8735371ebfc8dd0d1b31680c9c6c57ca92"  // POLAR
-    ];
-    
     // First try to get pools data which we know works
     console.log("Fetching pools data from Berachain");
-    const poolsData = await fetchGeckoTerminal("/networks/berachain/pools?page=1&page_size=50");
+    const poolsData = await fetchGeckoTerminal("/networks/berachain/pools?page=1&page_size=100");
     
     if (!poolsData?.data) {
       throw new Error("Failed to fetch pools data");
@@ -359,6 +379,13 @@ export async function getTopTokens(): Promise<TopToken[]> {
         const baseTokenId = pool.relationships.base_token.data.id;
         const baseTokenAddress = baseTokenId.split('_')[1].toLowerCase();
         const baseTokenPrice = pool.attributes.base_token_price_usd;
+        const baseTokenSymbol = pool.attributes.base_token_symbol;
+        
+        // Skip stablecoins
+        if (isStablecoin(baseTokenSymbol)) {
+          console.log(`Skipping stablecoin: ${baseTokenSymbol}`);
+          continue;
+        }
         
         // Update token info if we have a price
         if (baseTokenPrice && !tokenMap.has(baseTokenAddress)) {
@@ -366,10 +393,9 @@ export async function getTopTokens(): Promise<TopToken[]> {
             address: baseTokenAddress,
             price_usd: baseTokenPrice,
             volume_24h: pool.attributes.volume_usd?.h24 || 0,
-            // We'll try to get these from token data later
-            name: "",
-            symbol: "",
-            price_change_24h: 0,
+            name: pool.attributes.base_token_name || "",
+            symbol: baseTokenSymbol || "",
+            price_change_24h: pool.attributes.price_change_percentage?.h24 || 0,
             market_cap_usd: 0
           });
         }
@@ -380,6 +406,13 @@ export async function getTopTokens(): Promise<TopToken[]> {
         const quoteTokenId = pool.relationships.quote_token.data.id;
         const quoteTokenAddress = quoteTokenId.split('_')[1].toLowerCase();
         const quoteTokenPrice = pool.attributes.quote_token_price_usd;
+        const quoteTokenSymbol = pool.attributes.quote_token_symbol;
+        
+        // Skip stablecoins
+        if (isStablecoin(quoteTokenSymbol)) {
+          console.log(`Skipping stablecoin: ${quoteTokenSymbol}`);
+          continue;
+        }
         
         // Update token info if we have a price
         if (quoteTokenPrice && !tokenMap.has(quoteTokenAddress)) {
@@ -387,48 +420,59 @@ export async function getTopTokens(): Promise<TopToken[]> {
             address: quoteTokenAddress,
             price_usd: quoteTokenPrice,
             volume_24h: pool.attributes.volume_usd?.h24 || 0,
-            // We'll try to get these from token data later
-            name: "",
-            symbol: "",
-            price_change_24h: 0,
+            name: pool.attributes.quote_token_name || "",
+            symbol: quoteTokenSymbol || "",
+            price_change_24h: -1 * (pool.attributes.price_change_percentage?.h24 || 0), // Invert for quote token
             market_cap_usd: 0
           });
         }
       }
     }
     
-    console.log(`Extracted ${tokenMap.size} unique tokens from pools data`);
+    console.log(`Extracted ${tokenMap.size} unique non-stablecoin tokens from pools data`);
     
     // Now try to get detailed information for each token
     const tokens: TopToken[] = [];
     
-    // First try to get data for our priority tokens
-    for (const address of tokenAddresses) {
-      const normalizedAddress = address.toLowerCase();
+    // Convert map to array and sort by volume
+    let tokenArray = Array.from(tokenMap.values());
+    tokenArray.sort((a, b) => b.volume_24h - a.volume_24h);
+    
+    // Take top 20 tokens by volume to enrich with additional data
+    const topTokensByVolume = tokenArray.slice(0, 20);
+    
+    // Try to get detailed information for each token
+    for (const tokenData of topTokensByVolume) {
+      const address = tokenData.address;
       
       try {
-        console.log(`Fetching data for token ${normalizedAddress}`);
-        const tokenData = await fetchGeckoTerminal(`/networks/berachain/tokens/${normalizedAddress}`);
+        console.log(`Fetching data for token ${address}`);
+        const tokenResponse = await fetchGeckoTerminal(`/networks/berachain/tokens/${address}`);
         
-        if (tokenData?.data?.attributes) {
-          const attrs = tokenData.data.attributes;
-          const existingData = tokenMap.get(normalizedAddress) || {};
+        if (tokenResponse?.data?.attributes) {
+          const attrs = tokenResponse.data.attributes;
+          
+          // Skip stablecoins (double check)
+          if (isStablecoin(attrs.symbol)) {
+            console.log(`Skipping stablecoin: ${attrs.symbol}`);
+            continue;
+          }
           
           // Create base token data
           const tokenInfo: TopToken = {
-            address: normalizedAddress,
-            name: attrs.name || "Unknown",
-            symbol: attrs.symbol || "???",
-            price_usd: attrs.price_usd || existingData.price_usd || "0",
-            volume_24h: attrs.volume_usd?.h24 || existingData.volume_24h || 0,
-            price_change_24h: 0, // Not available in token data
+            address: address,
+            name: attrs.name || tokenData.name || "Unknown",
+            symbol: attrs.symbol || tokenData.symbol || "???",
+            price_usd: attrs.price_usd || tokenData.price_usd || "0",
+            volume_24h: attrs.volume_usd?.h24 || tokenData.volume_24h || 0,
+            price_change_24h: tokenData.price_change_24h || 0,
             market_cap_usd: attrs.market_cap_usd || attrs.fdv_usd || 0
           };
           
           // Try to get additional info from the /info endpoint
           try {
-            console.log(`Fetching additional info for token ${normalizedAddress}`);
-            const infoData = await fetchGeckoTerminal(`/networks/berachain/tokens/${normalizedAddress}/info`);
+            console.log(`Fetching additional info for token ${address}`);
+            const infoData = await fetchGeckoTerminal(`/networks/berachain/tokens/${address}/info`);
             
             if (infoData?.data?.attributes) {
               const infoAttrs = infoData.data.attributes;
@@ -446,127 +490,41 @@ export async function getTopTokens(): Promise<TopToken[]> {
               console.log(`Successfully enriched token ${attrs.symbol || "Unknown"} with additional metadata`);
             }
           } catch (infoError) {
-            console.warn(`Failed to fetch additional info for token ${normalizedAddress}:`, infoError);
+            console.warn(`Failed to fetch additional info for token ${address}:`, infoError);
             // Continue with the basic token data we have
           }
           
           tokens.push(tokenInfo);
           console.log(`Successfully added token ${attrs.symbol || "Unknown"}`);
+        } else {
+          // Use the data we already have from pools
+          tokens.push({
+            address: address,
+            name: tokenData.name || "Unknown",
+            symbol: tokenData.symbol || "???",
+            price_usd: tokenData.price_usd || "0",
+            volume_24h: tokenData.volume_24h || 0,
+            price_change_24h: tokenData.price_change_24h || 0,
+            market_cap_usd: tokenData.market_cap_usd || 0
+          });
+          
+          console.log(`Added token ${tokenData.symbol || "Unknown"} with pool data`);
         }
       } catch (error) {
-        console.warn(`Failed to fetch data for token ${normalizedAddress}:`, error);
+        console.warn(`Failed to fetch data for token ${address}:`, error);
         
-        // If we have some data from pools, use that
-        if (tokenMap.has(normalizedAddress)) {
-          const fallbackData = tokenMap.get(normalizedAddress);
-          
-          // Use hardcoded name/symbol for known tokens
-          let name = "Unknown";
-          let symbol = "???";
-          
-          // Map known addresses to names/symbols
-          if (normalizedAddress === "0x6969696969696969696969696969696969696969".toLowerCase()) {
-            name = "Wrapped Bera";
-            symbol = "WBERA";
-          } else if (normalizedAddress === "0x2f6f07cdcf3588944bf4c42ac74ff24bf56e7590".toLowerCase()) {
-            name = "Wrapped Ether";
-            symbol = "WETH";
-          } else if (normalizedAddress === "0x0555e30da8f98308edb960aa94c0db47230d2b9c".toLowerCase()) {
-            name = "Wrapped Bitcoin";
-            symbol = "WBTC";
-          }
-          
-          tokens.push({
-            address: normalizedAddress,
-            name,
-            symbol,
-            price_usd: fallbackData.price_usd || "0",
-            volume_24h: fallbackData.volume_24h || 0,
-            price_change_24h: 0,
-            market_cap_usd: 0
-          });
-          
-          console.log(`Added token ${symbol} with fallback data`);
-        }
-      }
-    }
-    
-    // If we don't have enough tokens yet, add more from the pool data
-    if (tokens.length < 12) {
-      console.log("Adding more tokens from pool data to reach 12 tokens");
-      
-      // Get tokens we haven't processed yet
-      for (const [address, data] of tokenMap.entries()) {
-        // Skip tokens we've already added
-        if (tokens.some(t => t.address.toLowerCase() === address.toLowerCase())) {
-          continue;
-        }
+        // Use the data we have from pools
+        tokens.push({
+          address: address,
+          name: tokenData.name || "Unknown",
+          symbol: tokenData.symbol || "???",
+          price_usd: tokenData.price_usd || "0",
+          volume_24h: tokenData.volume_24h || 0,
+          price_change_24h: tokenData.price_change_24h || 0,
+          market_cap_usd: tokenData.market_cap_usd || 0
+        });
         
-        try {
-          // Try to get token details
-          const tokenData = await fetchGeckoTerminal(`/networks/berachain/tokens/${address}`);
-          
-          if (tokenData?.data?.attributes) {
-            const attrs = tokenData.data.attributes;
-            
-            // Create base token data
-            const tokenInfo: TopToken = {
-              address,
-              name: attrs.name || "Unknown",
-              symbol: attrs.symbol || "???",
-              price_usd: attrs.price_usd || data.price_usd || "0",
-              volume_24h: attrs.volume_usd?.h24 || data.volume_24h || 0,
-              price_change_24h: 0,
-              market_cap_usd: attrs.market_cap_usd || attrs.fdv_usd || 0
-            };
-            
-            // Try to get additional info from the /info endpoint
-            try {
-              console.log(`Fetching additional info for token ${address}`);
-              const infoData = await fetchGeckoTerminal(`/networks/berachain/tokens/${address}/info`);
-              
-              if (infoData?.data?.attributes) {
-                const infoAttrs = infoData.data.attributes;
-                
-                // Enrich token data with additional metadata
-                tokenInfo.image_url = infoAttrs.image_url;
-                tokenInfo.description = infoAttrs.description;
-                tokenInfo.websites = infoAttrs.websites;
-                tokenInfo.discord_url = infoAttrs.discord_url;
-                tokenInfo.telegram_handle = infoAttrs.telegram_handle;
-                tokenInfo.twitter_handle = infoAttrs.twitter_handle;
-                tokenInfo.categories = infoAttrs.categories;
-                tokenInfo.gt_score = infoAttrs.gt_score;
-                
-                console.log(`Successfully enriched token ${attrs.symbol || "Unknown"} with additional metadata`);
-              }
-            } catch (infoError) {
-              console.warn(`Failed to fetch additional info for token ${address}:`, infoError);
-              // Continue with the basic token data we have
-            }
-            
-            tokens.push(tokenInfo);
-            console.log(`Added additional token ${attrs.symbol || "Unknown"}`);
-          }
-        } catch (error) {
-          console.warn(`Failed to fetch additional data for token ${address}:`, error);
-          
-          // Use the data we have from pools
-          tokens.push({
-            address,
-            name: "Unknown",
-            symbol: "???",
-            price_usd: data.price_usd || "0",
-            volume_24h: data.volume_24h || 0,
-            price_change_24h: 0,
-            market_cap_usd: 0
-          });
-        }
-        
-        // Stop once we have 12 tokens
-        if (tokens.length >= 12) {
-          break;
-        }
+        console.log(`Added token ${tokenData.symbol || "Unknown"} with fallback pool data`);
       }
     }
     
@@ -576,123 +534,13 @@ export async function getTopTokens(): Promise<TopToken[]> {
     // Limit to 12 tokens
     const result = tokens.slice(0, 12);
     
-    console.log(`Returning ${result.length} top tokens with real-time data`);
+    console.log(`Returning ${result.length} top non-stablecoin tokens with real-time data`);
     return result;
   } catch (error) {
     console.error("Error fetching real-time token data:", error);
     
-    // Fallback to hardcoded data if all API attempts fail
-    console.log("Falling back to hardcoded data due to API error");
-    
-    return [
-      {
-        address: "0x6969696969696969696969696969696969696969",
-        name: "Wrapped Bera",
-        symbol: "WBERA",
-        price_usd: "6.14",
-        volume_24h: 23012057,
-        price_change_24h: 0,
-        market_cap_usd: 125754237
-      },
-      {
-        address: "0x2f6f07cdcf3588944bf4c42ac74ff24bf56e7590",
-        name: "Wrapped Ether",
-        symbol: "WETH",
-        price_usd: "1890.36",
-        volume_24h: 12500000,
-        price_change_24h: -1.01,
-        market_cap_usd: 356634382
-      },
-      {
-        address: "0x0555e30da8f98308edb960aa94c0db47230d2b9c",
-        name: "Wrapped Bitcoin",
-        symbol: "WBTC",
-        price_usd: "82689.18",
-        volume_24h: 3358438,
-        price_change_24h: -1.38,
-        market_cap_usd: 333420126
-      },
-      {
-        address: "0x5d7a7e844e2f6d3c0e6f9e97c8ec29795bac2f65",
-        name: "Bong",
-        symbol: "BONG",
-        price_usd: "0.0042",
-        volume_24h: 2500000,
-        price_change_24h: 12.5,
-        market_cap_usd: 42000000
-      },
-      {
-        address: "0x8c4495d21e725e95a32e8d5b1a96e3b1b5a0c4a9",
-        name: "Honey Pot",
-        symbol: "HPOT",
-        price_usd: "0.0185",
-        volume_24h: 1850000,
-        price_change_24h: 8.2,
-        market_cap_usd: 18500000
-      },
-      {
-        address: "0x7b5a3e3d8493c8c3b9c1f79d34b9f5bfb3ce7a95",
-        name: "Berps",
-        symbol: "BERPS",
-        price_usd: "0.0075",
-        volume_24h: 1750000,
-        price_change_24h: -5.3,
-        market_cap_usd: 7500000
-      },
-      {
-        address: "0x3e7fc44e25c07be3d67c241e6e59cb838df035eb",
-        name: "Bera Inu",
-        symbol: "BINU",
-        price_usd: "0.00000325",
-        volume_24h: 1250000,
-        price_change_24h: 32.1,
-        market_cap_usd: 3250000
-      },
-      {
-        address: "0x9c6b5cef4b2a14067c0f7c9b1a8a51f7c0c363f3",
-        name: "Berachain Gold",
-        symbol: "BGOLD",
-        price_usd: "0.0215",
-        volume_24h: 1150000,
-        price_change_24h: -2.8,
-        market_cap_usd: 21500000
-      },
-      {
-        address: "0x4d5f06cdc73d72c891eb79f1d350a1c3c8a84a51",
-        name: "Salmon",
-        symbol: "SALMON",
-        price_usd: "0.0092",
-        volume_24h: 920000,
-        price_change_24h: 15.7,
-        market_cap_usd: 9200000
-      },
-      {
-        address: "0x2c4a603a2aa5596287a06886862dc29d56dbc354",
-        name: "Grizzly",
-        symbol: "GRIZ",
-        price_usd: "0.0135",
-        volume_24h: 850000,
-        price_change_24h: 4.2,
-        market_cap_usd: 13500000
-      },
-      {
-        address: "0x1d5e65a087eb1cf5c034f19c7967d4c2847022e5",
-        name: "Kodiak",
-        symbol: "KOD",
-        price_usd: "0.0078",
-        volume_24h: 780000,
-        price_change_24h: -1.5,
-        market_cap_usd: 7800000
-      },
-      {
-        address: "0x8a6d4c8735371ebfc8dd0d1b31680c9c6c57ca92",
-        name: "Polar",
-        symbol: "POLAR",
-        price_usd: "0.0056",
-        volume_24h: 560000,
-        price_change_24h: 7.8,
-        market_cap_usd: 5600000
-      }
-    ];
+    // Return empty array instead of hardcoded data
+    console.warn("Returning empty array due to API error");
+    return [];
   }
 }

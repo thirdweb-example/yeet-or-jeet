@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getTopTokens, DexScreenerToken } from "@/lib/dexscreener";
+import { getTopTokens, TopToken } from "@/lib/geckoterminal";
 import { TokenIcon, TokenProvider } from "thirdweb/react";
 import { thirdwebClient } from "@/lib/thirdweb-client";
 import { Skeleton } from "../ui/skeleton";
@@ -12,7 +12,8 @@ import {
   TwitterIcon,
   GlobeIcon,
   MessageCircleIcon,
-  DropletIcon
+  DropletIcon,
+  AlertCircleIcon
 } from "lucide-react";
 import { supportedChains } from "@/lib/supportedChains";
 import { useState } from "react";
@@ -30,6 +31,8 @@ export function TopTokensGrid({ onTokenSelect }: { onTokenSelect: (address: stri
   const topTokensQuery = useQuery({
     queryKey: ["topTokens"],
     queryFn: async () => getTopTokens(),
+    retry: 3, // Retry 3 times if the API call fails
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30000), // Exponential backoff
   });
 
   const handleCopy = async (address: string, e: React.MouseEvent) => {
@@ -79,15 +82,49 @@ export function TopTokensGrid({ onTokenSelect }: { onTokenSelect: (address: stri
 
   if (topTokensQuery.isError) {
     return (
-      <div className="text-destructive">
-        Error loading top tokens: {topTokensQuery.error instanceof Error ? topTokensQuery.error.message : "Unknown error"}
+      <div className="text-destructive p-8 border border-destructive/20 bg-destructive/10 rounded-xl flex flex-col items-center justify-center text-center">
+        <AlertCircleIcon className="size-12 mb-4 opacity-80" />
+        <h3 className="text-lg font-semibold mb-2">Error Loading Tokens</h3>
+        <p className="mb-4">
+          {topTokensQuery.error instanceof Error 
+            ? topTokensQuery.error.message 
+            : "Failed to load token data from the API"}
+        </p>
+        <Button 
+          variant="outline" 
+          onClick={() => topTokensQuery.refetch()}
+          className="border-destructive/30 hover:border-destructive/50"
+        >
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
+  // Handle case where no tokens are found
+  if (!topTokensQuery.data || topTokensQuery.data.length === 0) {
+    return (
+      <div className="text-muted-foreground p-8 border border-border bg-card/50 rounded-xl flex flex-col items-center justify-center text-center">
+        <AlertCircleIcon className="size-12 mb-4 opacity-60" />
+        <h3 className="text-lg font-semibold mb-2">No Tokens Found</h3>
+        <p className="mb-4">
+          We couldn't find any non-stablecoin tokens with sufficient trading volume.
+          <br />
+          This could be due to API limitations or network issues.
+        </p>
+        <Button 
+          variant="outline" 
+          onClick={() => topTokensQuery.refetch()}
+        >
+          Refresh
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {topTokensQuery.data?.map((token: DexScreenerToken) => (
+      {topTokensQuery.data.map((token: TopToken) => (
         <TokenProvider
           key={token.address}
           address={token.address}

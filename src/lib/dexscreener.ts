@@ -88,7 +88,12 @@ interface DexScreenerPair {
 async function fetchDexScreener(endpoint: string) {
   try {
     console.log(`Fetching DexScreener API: ${DEXSCREENER_BASE_URL}${endpoint}`);
-    const response = await fetch(`${DEXSCREENER_BASE_URL}${endpoint}`);
+    const response = await fetch(`${DEXSCREENER_BASE_URL}${endpoint}`, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; BerachainTokenAnalyzer/1.0)'
+      }
+    });
 
     if (!response.ok) {
       console.error("DexScreener API error details:", {
@@ -96,14 +101,14 @@ async function fetchDexScreener(endpoint: string) {
         status: response.status,
         statusText: response.statusText,
       });
-      throw new Error(`DexScreener API error: ${response.status} - ${response.statusText}`);
+      return null; // Return null instead of throwing an error
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
     console.error("DexScreener API error:", error);
-    throw error;
+    return null; // Return null instead of throwing an error
   }
 }
 
@@ -122,7 +127,8 @@ export async function getTokenInfo(address: string): Promise<DexScreenerToken | 
     // Fetch token pairs from DexScreener
     const data = await fetchDexScreener(`/tokens/berachain/${normalizedAddress}`);
     
-    if (!data?.pairs || data.pairs.length === 0) {
+    // If API call failed or no pairs found, return null
+    if (!data || !data.pairs || data.pairs.length === 0) {
       console.warn(`No pairs found for token ${normalizedAddress}`);
       return null;
     }
@@ -170,7 +176,7 @@ export async function getTokenInfo(address: string): Promise<DexScreenerToken | 
     return tokenInfo;
   } catch (error) {
     console.error("Error getting token info from DexScreener:", error);
-    return null;
+    return null; // Return null instead of throwing an error
   }
 }
 
@@ -186,8 +192,9 @@ export async function getTopTokens(limit = 12): Promise<DexScreenerToken[]> {
     // Fetch top pairs from Berachain
     const data = await fetchDexScreener("/pairs/berachain");
     
-    if (!data?.pairs || data.pairs.length === 0) {
-      throw new Error("No pairs found on Berachain");
+    if (!data || !data.pairs || data.pairs.length === 0) {
+      console.warn("No pairs found on Berachain");
+      return []; // Return empty array instead of hardcoded tokens
     }
     
     // Get all pairs and sort by volume
@@ -200,53 +207,71 @@ export async function getTopTokens(limit = 12): Promise<DexScreenerToken[]> {
     
     // Process pairs to extract tokens
     for (const pair of pairs) {
-      // Process base token
-      if (pair.baseToken && !processedAddresses.has(pair.baseToken.address.toLowerCase())) {
-        const baseAddress = pair.baseToken.address.toLowerCase();
-        processedAddresses.add(baseAddress);
+      try {
+        // Process base token
+        if (pair.baseToken && !processedAddresses.has(pair.baseToken.address.toLowerCase())) {
+          const baseAddress = pair.baseToken.address.toLowerCase();
+          processedAddresses.add(baseAddress);
+          
+          // Skip stablecoins and common quote tokens
+          if (isStablecoin(pair.baseToken.symbol)) {
+            console.log(`Skipping stablecoin: ${pair.baseToken.symbol}`);
+            continue;
+          }
+          
+          tokenMap.set(baseAddress, {
+            address: baseAddress,
+            name: pair.baseToken.name || "Unknown",
+            symbol: pair.baseToken.symbol || "???",
+            price_usd: pair.priceUsd || "0",
+            volume_24h: pair.volume?.h24 || 0,
+            price_change_24h: pair.priceChange?.h24 || 0,
+            market_cap_usd: pair.marketCap || pair.fdv || 0,
+            liquidity_usd: pair.liquidity?.usd || 0,
+            fdv_usd: pair.fdv || 0
+          });
+        }
         
-        // Skip stablecoins and common quote tokens
-        if (isStablecoin(pair.baseToken.symbol)) continue;
-        
-        tokenMap.set(baseAddress, {
-          address: baseAddress,
-          name: pair.baseToken.name,
-          symbol: pair.baseToken.symbol,
-          price_usd: pair.priceUsd || "0",
-          volume_24h: pair.volume?.h24 || 0,
-          price_change_24h: pair.priceChange?.h24 || 0,
-          market_cap_usd: pair.marketCap || pair.fdv || 0,
-          liquidity_usd: pair.liquidity?.usd || 0,
-          fdv_usd: pair.fdv || 0
-        });
-      }
-      
-      // Process quote token
-      if (pair.quoteToken && !processedAddresses.has(pair.quoteToken.address.toLowerCase())) {
-        const quoteAddress = pair.quoteToken.address.toLowerCase();
-        processedAddresses.add(quoteAddress);
-        
-        // Skip stablecoins and common quote tokens
-        if (isStablecoin(pair.quoteToken.symbol)) continue;
-        
-        // For quote tokens, we need to calculate the price differently
-        const quotePrice = pair.priceUsd ? (1 / parseFloat(pair.priceUsd)).toString() : "0";
-        
-        tokenMap.set(quoteAddress, {
-          address: quoteAddress,
-          name: pair.quoteToken.name,
-          symbol: pair.quoteToken.symbol,
-          price_usd: quotePrice,
-          volume_24h: pair.volume?.h24 || 0,
-          price_change_24h: -1 * (pair.priceChange?.h24 || 0), // Invert price change for quote token
-          market_cap_usd: 0, // We don't have this data for quote tokens
-          liquidity_usd: pair.liquidity?.usd || 0,
-          fdv_usd: 0 // We don't have this data for quote tokens
-        });
+        // Process quote token
+        if (pair.quoteToken && !processedAddresses.has(pair.quoteToken.address.toLowerCase())) {
+          const quoteAddress = pair.quoteToken.address.toLowerCase();
+          processedAddresses.add(quoteAddress);
+          
+          // Skip stablecoins and common quote tokens
+          if (isStablecoin(pair.quoteToken.symbol)) {
+            console.log(`Skipping stablecoin: ${pair.quoteToken.symbol}`);
+            continue;
+          }
+          
+          // For quote tokens, we need to calculate the price differently
+          const quotePrice = pair.priceUsd ? (1 / parseFloat(pair.priceUsd)).toString() : "0";
+          
+          tokenMap.set(quoteAddress, {
+            address: quoteAddress,
+            name: pair.quoteToken.name || "Unknown",
+            symbol: pair.quoteToken.symbol || "???",
+            price_usd: quotePrice,
+            volume_24h: pair.volume?.h24 || 0,
+            price_change_24h: -1 * (pair.priceChange?.h24 || 0), // Invert price change for quote token
+            market_cap_usd: 0, // We don't have this data for quote tokens
+            liquidity_usd: pair.liquidity?.usd || 0,
+            fdv_usd: 0 // We don't have this data for quote tokens
+          });
+        }
+      } catch (pairError) {
+        console.warn("Error processing pair:", pairError);
+        // Continue to next pair
+        continue;
       }
       
       // Stop once we have enough tokens
-      if (tokenMap.size >= limit * 2) break; // Get more than needed to filter later
+      if (tokenMap.size >= limit * 3) break; // Get more than needed to filter later
+    }
+    
+    // If we couldn't extract any tokens, return empty array
+    if (tokenMap.size === 0) {
+      console.warn("No valid tokens extracted from pairs");
+      return []; // Return empty array instead of hardcoded tokens
     }
     
     // Convert map to array and sort by volume
@@ -284,8 +309,8 @@ export async function getTopTokens(limit = 12): Promise<DexScreenerToken[]> {
   } catch (error) {
     console.error("Error fetching top tokens from DexScreener:", error);
     
-    // Fallback to hardcoded data
-    return getHardcodedTokens();
+    // Return empty array instead of hardcoded tokens
+    return [];
   }
 }
 
@@ -295,123 +320,34 @@ export async function getTopTokens(limit = 12): Promise<DexScreenerToken[]> {
  * @returns True if the token is a stablecoin
  */
 function isStablecoin(symbol: string): boolean {
-  const stablecoins = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD', 'USDD', 'GUSD', 'USDJ'];
-  return stablecoins.includes(symbol.toUpperCase());
-}
-
-/**
- * Returns hardcoded token data as a fallback
- * @returns Array of hardcoded tokens
- */
-function getHardcodedTokens(): DexScreenerToken[] {
-  return [
-    {
-      address: "0x6969696969696969696969696969696969696969",
-      name: "Wrapped Bera",
-      symbol: "WBERA",
-      price_usd: "6.14",
-      volume_24h: 23012057,
-      price_change_24h: 0,
-      market_cap_usd: 125754237
-    },
-    {
-      address: "0x2f6f07cdcf3588944bf4c42ac74ff24bf56e7590",
-      name: "Wrapped Ether",
-      symbol: "WETH",
-      price_usd: "1890.36",
-      volume_24h: 12500000,
-      price_change_24h: -1.01,
-      market_cap_usd: 356634382
-    },
-    {
-      address: "0x0555e30da8f98308edb960aa94c0db47230d2b9c",
-      name: "Wrapped Bitcoin",
-      symbol: "WBTC",
-      price_usd: "82689.18",
-      volume_24h: 3358438,
-      price_change_24h: -1.38,
-      market_cap_usd: 333420126
-    },
-    {
-      address: "0x5d7a7e844e2f6d3c0e6f9e97c8ec29795bac2f65",
-      name: "Bong",
-      symbol: "BONG",
-      price_usd: "0.0042",
-      volume_24h: 2500000,
-      price_change_24h: 12.5,
-      market_cap_usd: 42000000
-    },
-    {
-      address: "0x8c4495d21e725e95a32e8d5b1a96e3b1b5a0c4a9",
-      name: "Honey Pot",
-      symbol: "HPOT",
-      price_usd: "0.0185",
-      volume_24h: 1850000,
-      price_change_24h: 8.2,
-      market_cap_usd: 18500000
-    },
-    {
-      address: "0x7b5a3e3d8493c8c3b9c1f79d34b9f5bfb3ce7a95",
-      name: "Berps",
-      symbol: "BERPS",
-      price_usd: "0.0075",
-      volume_24h: 1750000,
-      price_change_24h: -5.3,
-      market_cap_usd: 7500000
-    },
-    {
-      address: "0x3e7fc44e25c07be3d67c241e6e59cb838df035eb",
-      name: "Bera Inu",
-      symbol: "BINU",
-      price_usd: "0.00000325",
-      volume_24h: 1250000,
-      price_change_24h: 32.1,
-      market_cap_usd: 3250000
-    },
-    {
-      address: "0x9c6b5cef4b2a14067c0f7c9b1a8a51f7c0c363f3",
-      name: "Berachain Gold",
-      symbol: "BGOLD",
-      price_usd: "0.0215",
-      volume_24h: 1150000,
-      price_change_24h: -2.8,
-      market_cap_usd: 21500000
-    },
-    {
-      address: "0x4d5f06cdc73d72c891eb79f1d350a1c3c8a84a51",
-      name: "Salmon",
-      symbol: "SALMON",
-      price_usd: "0.0092",
-      volume_24h: 920000,
-      price_change_24h: 15.7,
-      market_cap_usd: 9200000
-    },
-    {
-      address: "0x2c4a603a2aa5596287a06886862dc29d56dbc354",
-      name: "Grizzly",
-      symbol: "GRIZ",
-      price_usd: "0.0135",
-      volume_24h: 850000,
-      price_change_24h: 4.2,
-      market_cap_usd: 13500000
-    },
-    {
-      address: "0x1d5e65a087eb1cf5c034f19c7967d4c2847022e5",
-      name: "Kodiak",
-      symbol: "KOD",
-      price_usd: "0.0078",
-      volume_24h: 780000,
-      price_change_24h: -1.5,
-      market_cap_usd: 7800000
-    },
-    {
-      address: "0x8a6d4c8735371ebfc8dd0d1b31680c9c6c57ca92",
-      name: "Polar",
-      symbol: "POLAR",
-      price_usd: "0.0056",
-      volume_24h: 560000,
-      price_change_24h: 7.8,
-      market_cap_usd: 5600000
-    }
+  if (!symbol) return false;
+  
+  // Expanded list of stablecoins and their variations
+  const stablecoins = [
+    'USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD', 'USDD', 'GUSD', 'USDJ',
+    'UST', 'USDB', 'USDK', 'USDX', 'SUSD', 'CUSD', 'MUSD', 'DUSD', 'HUSD', 'OUSD',
+    'USDN', 'USDH', 'USDL', 'USDR', 'USDV', 'USDW', 'USDY', 'USDZ',
+    'EURT', 'EURS', 'EUROC', 'EURU', 'JEUR', 'SEUR',
+    'CADC', 'XSGD', 'XIDR', 'NZDS', 'TRYB', 'BIDR', 'BRLC', 'CNHT', 'IDRT', 'KRWB',
+    'MIM', 'USDM', 'USDS', 'USDE', 'USDEX', 'USDFL', 'USDQ', 'USDG', 'USDTG'
   ];
+  
+  // Check if the symbol contains any of the stablecoin identifiers
+  const upperSymbol = symbol.toUpperCase();
+  
+  // Direct match
+  if (stablecoins.includes(upperSymbol)) return true;
+  
+  // Check for common patterns in stablecoin names
+  if (upperSymbol.startsWith('USD') || 
+      upperSymbol.endsWith('USD') || 
+      upperSymbol.includes('USD') ||
+      upperSymbol.startsWith('EUR') ||
+      upperSymbol.endsWith('EUR') ||
+      upperSymbol.includes('STABLE') ||
+      upperSymbol.includes('PEG')) {
+    return true;
+  }
+  
+  return false;
 } 
