@@ -11,10 +11,12 @@ A DeFi trading assistant powered by AI that helps you make informed decisions ab
   - View token descriptions and trust scores
   - One-click token selection for analysis
   - Automatic filtering of stablecoins for more relevant analysis
+  - Fallback to curated token list when APIs are unavailable
 
 - **Real-time Price Data**: Integrated with multiple data sources for accurate and up-to-date token information
   - GeckoTerminal API as primary data source for comprehensive token information
   - DexScreener API as fallback for token data when GeckoTerminal is unavailable
+  - Hardcoded token data as final fallback when both APIs fail
   - Current price in USD
   - Price updates in real-time
   - Support for all whitelisted tokens on Berachain
