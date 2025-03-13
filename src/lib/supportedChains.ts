@@ -9,6 +9,12 @@ const berachain: Chain = {
     decimals: 18,
   },
   name: "Berachain",
+  icon: {
+    url: "https://raw.githubusercontent.com/berachain/assets/main/brand/bera-logo-dark.svg",
+    width: 128,
+    height: 128,
+    format: "svg",
+  },
   blockExplorers: [
     {
       name: "Berascan",
