@@ -2,11 +2,28 @@
 
 import { cn } from "../../lib/utils";
 import { LoadingSpinner } from "./Loading";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { useAccount, useWriteContract } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseEther, maxUint256, zeroAddress } from "viem";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
+import { RefreshCw } from "lucide-react";
 
 const oogaBoogaChainMap = {
   80094: "berachain",
@@ -91,6 +108,9 @@ type OogaBoogaWidgetProps = {
   className?: string;
 };
 
+const RATE_LIMIT_DELAY = 2000; // 2 seconds between API calls
+const PRICE_REFRESH_INTERVAL = 30000; // 30 seconds
+
 export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [priceData, setPriceData] = useState<PriceDisplayData | null>(null);
@@ -99,12 +119,32 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
   const [amount, setAmount] = useState<string>("");
   const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
   const [needsApproval, setNeedsApproval] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showSwapConfirmation, setShowSwapConfirmation] = useState(false);
+  const [lastApiCall, setLastApiCall] = useState(0);
   const { address } = useAccount();
-  const { writeContract } = useWriteContract();
+  const { writeContract, data: swapTxHash } = useWriteContract();
+  const { isLoading: isTransactionPending } = useWaitForTransactionReceipt({
+    hash: swapTxHash,
+  });
+  const priceRefreshInterval = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const baseUrl = getApiBaseUrl(props.chainId);
 
-  // Check token allowance
+  // Rate limiting helper
+  const rateLimitedFetch = async (url: string, options: RequestInit = {}) => {
+    const now = Date.now();
+    const timeSinceLastCall = now - lastApiCall;
+    
+    if (timeSinceLastCall < RATE_LIMIT_DELAY) {
+      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY - timeSinceLastCall));
+    }
+    
+    setLastApiCall(Date.now());
+    return fetch(url, options);
+  };
+
+  // Check token allowance with rate limiting
   const checkAllowance = useCallback(async () => {
     if (!address || !props.fromTokenAddress || props.fromTokenAddress === zeroAddress) {
       return;
@@ -112,7 +152,7 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
 
     setIsCheckingAllowance(true);
     try {
-      const response = await fetch(
+      const response = await rateLimitedFetch(
         `${baseUrl}/v1/approve/allowance?token=${props.fromTokenAddress}&from=${address}`,
         {
           headers: {
@@ -136,12 +176,12 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
     }
   }, [address, props.fromTokenAddress, amount, baseUrl]);
 
-  // Approve token allowance
+  // Approve token with rate limiting
   const approveToken = async () => {
     if (!address || !props.fromTokenAddress) return;
 
     try {
-      const response = await fetch(
+      const response = await rateLimitedFetch(
         `${baseUrl}/v1/approve?token=${props.fromTokenAddress}&amount=${maxUint256}`,
         {
           headers: {
@@ -178,45 +218,58 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
     }
   };
 
+  // Fetch price data with rate limiting
+  const fetchPriceData = useCallback(async () => {
+    try {
+      if (!props.toTokenAddress && !props.fromTokenAddress) {
+        return;
+      }
+
+      setIsRefreshing(true);
+      const response = await rateLimitedFetch(
+        `${baseUrl}/v1/prices?currency=USD`,
+        {
+          headers: {
+            Authorization: `Bearer ${OOGABOOGA_API_KEY}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch price data");
+      }
+
+      const data: PriceData[] = await response.json();
+      const tokenAddress = props.toTokenAddress || props.fromTokenAddress;
+      const tokenPrice = data.find(p => p.address === tokenAddress);
+      
+      if (tokenPrice) {
+        setPriceData({
+          price: tokenPrice.price,
+        });
+      }
+      
+      setIsLoaded(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load price data");
+      setIsLoaded(true);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [props.chainId, props.toTokenAddress, props.fromTokenAddress, baseUrl]);
+
+  // Set up price refresh interval
   useEffect(() => {
-    const fetchPriceData = async () => {
-      try {
-        if (!props.toTokenAddress && !props.fromTokenAddress) {
-          return;
-        }
-
-        const response = await fetch(
-          `${baseUrl}/v1/prices?currency=USD`,
-          {
-            headers: {
-              Authorization: `Bearer ${OOGABOOGA_API_KEY}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch price data");
-        }
-
-        const data: PriceData[] = await response.json();
-        const tokenAddress = props.toTokenAddress || props.fromTokenAddress;
-        const tokenPrice = data.find(p => p.address === tokenAddress);
-        
-        if (tokenPrice) {
-          setPriceData({
-            price: tokenPrice.price,
-          });
-        }
-        
-        setIsLoaded(true);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load price data");
-        setIsLoaded(true);
+    fetchPriceData();
+    
+    priceRefreshInterval.current = setInterval(fetchPriceData, PRICE_REFRESH_INTERVAL);
+    
+    return () => {
+      if (priceRefreshInterval.current) {
+        clearInterval(priceRefreshInterval.current);
       }
     };
-
-    fetchPriceData();
-  }, [props.chainId, props.toTokenAddress, props.fromTokenAddress, baseUrl]);
+  }, [fetchPriceData]);
 
   // Check allowance when amount changes
   useEffect(() => {
@@ -225,11 +278,12 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
     }
   }, [amount, checkAllowance]);
 
+  // Fetch swap data with rate limiting
   const fetchSwapData = async () => {
     if (!amount || !props.fromTokenAddress || !props.toTokenAddress) return;
 
     try {
-      const response = await fetch(
+      const response = await rateLimitedFetch(
         `${baseUrl}/v1/swap/${props.chainId}`,
         {
           method: "POST",
@@ -253,6 +307,7 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
 
       const data = await response.json();
       setSwapData(data);
+      setShowSwapConfirmation(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load swap data");
     }
@@ -305,6 +360,7 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
         ],
         value: BigInt(swapData.routerParams.value),
       });
+      setShowSwapConfirmation(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to execute swap");
     }
@@ -332,9 +388,20 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Price Information</h3>
-          <span className="text-sm text-muted-foreground">
-            Powered by OogaBooga
-          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={fetchPriceData}
+              disabled={isRefreshing}
+              className="h-8 w-8"
+            >
+              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Powered by OogaBooga
+            </span>
+          </div>
         </div>
         
         {priceData && (
@@ -392,10 +459,24 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
                     {props.toTokenAddress === zeroAddress ? "BERA" : swapData.tokens[1]?.symbol}
                   </p>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Price Impact</p>
-                  <p className="text-xl font-bold">{(swapData.priceImpact * 100).toFixed(2)}%</p>
-                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Price Impact</p>
+                        <p className={cn(
+                          "text-xl font-bold",
+                          swapData.priceImpact > 0.01 ? "text-red-500" : "text-green-500"
+                        )}>
+                          {(swapData.priceImpact * 100).toFixed(2)}%
+                        </p>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Price impact shows how much the price will change due to your trade. Higher impact means worse execution price.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Route</p>
                   <p className="text-sm">
@@ -409,16 +490,36 @@ export function OogaBoogaWidget(props: OogaBoogaWidgetProps) {
                 </div>
               </div>
               <Button 
-                onClick={handleSwap}
+                onClick={fetchSwapData}
                 className="w-full"
-                disabled={!swapData.tx || swapData.status !== "Success"}
+                disabled={!swapData.tx || swapData.status !== "Success" || isTransactionPending}
               >
-                Execute Swap
+                {isTransactionPending ? "Transaction Pending..." : "Execute Swap"}
               </Button>
             </div>
           )}
         </div>
       </div>
+
+      <AlertDialog open={showSwapConfirmation} onOpenChange={setShowSwapConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Swap</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to execute this swap? This action cannot be undone.
+              <div className="mt-4 space-y-2">
+                <p>Amount In: {(BigInt(swapData?.amountIn || "0") / BigInt(10 ** 18)).toString()} {props.fromTokenAddress === zeroAddress ? "BERA" : swapData?.tokens[0]?.symbol}</p>
+                <p>Amount Out: {(BigInt(swapData?.assumedAmountOut || "0") / BigInt(10 ** 18)).toString()} {props.toTokenAddress === zeroAddress ? "BERA" : swapData?.tokens[1]?.symbol}</p>
+                <p>Price Impact: {(swapData?.priceImpact || 0 * 100).toFixed(2)}%</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSwap}>Confirm Swap</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
